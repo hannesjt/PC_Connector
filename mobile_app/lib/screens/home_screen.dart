@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import '../models/pc_profile.dart';
 import '../models/script_config.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 import '../services/wol_service.dart';
 import '../widgets/status_indicator.dart';
 import '../widgets/script_button.dart';
@@ -31,6 +33,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final Map<String, bool> _runningChains = {};
   Timer? _pollTimer;
 
+  // Script scope filter: false = dieses System, true = alle Systeme
+  bool _showGlobalScripts = false;
+
+  // Offline re-pairing
+  final _offlinePairCodeCtrl = TextEditingController();
+  bool _offlinePairing = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _offlinePairCodeCtrl.dispose();
     super.dispose();
   }
 
@@ -173,8 +183,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _reorderScripts(int oldIndex, int newIndex) {
     setState(() {
       if (newIndex > oldIndex) newIndex--;
-      final item = _scripts.removeAt(oldIndex);
-      _scripts.insert(newIndex, item);
+      // Map filtered indices → full _scripts indices
+      final filteredItems = _filteredScripts;
+      final movedItem = filteredItems[oldIndex];
+      final targetItem = filteredItems[newIndex];
+      final actualOld = _scripts.indexOf(movedItem);
+      final actualNew = _scripts.indexOf(targetItem);
+      _scripts.removeAt(actualOld);
+      _scripts.insert(actualNew, movedItem);
     });
   }
 
@@ -343,6 +359,58 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  List<ScriptConfig> get _filteredScripts =>
+      _scripts.where((s) => s.isGlobal == _showGlobalScripts).toList();
+
+  Future<void> _pairFromHomeScreen() async {
+    final code = _offlinePairCodeCtrl.text.trim();
+    if (code.isEmpty) return;
+    setState(() => _offlinePairing = true);
+    try {
+      String deviceName = 'Mein Gerät';
+      try {
+        final info = await DeviceInfoPlugin().androidInfo;
+        final brand = info.brand;
+        final model = info.model;
+        deviceName = model.toLowerCase().startsWith(brand.toLowerCase())
+            ? model
+            : '$brand $model';
+      } catch (_) {}
+      final result = await _api.pairFull(code, deviceName);
+      if (!mounted) return;
+      if (result == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kopplungscode ungültig oder abgelaufen'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      final updated = widget.profile.copyWith(
+        deviceToken: result.token,
+        macAddress: result.macAddress ?? widget.profile.macAddress,
+      );
+      await StorageService().updateProfile(updated);
+      _offlinePairCodeCtrl.clear();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erfolgreich gekoppelt!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _checkStatus();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Verbindung fehlgeschlagen: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _offlinePairing = false);
+    }
+  }
+
   Map<String, List<ScriptConfig>> get _groupedScripts {
     final groups = <String, List<ScriptConfig>>{};
     for (final s in _scripts) {
@@ -360,9 +428,42 @@ class _HomeScreenState extends State<HomeScreen> {
     return known + rest;
   }
 
+  Widget _buildScopeToggle(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: false,
+                label: Text('Dieses System'),
+                icon: Icon(Icons.computer),
+              ),
+              ButtonSegment(
+                value: true,
+                label: Text('Alle Systeme'),
+                icon: Icon(Icons.public),
+              ),
+            ],
+            selected: {_showGlobalScripts},
+            onSelectionChanged: (val) => setState(() {
+              _showGlobalScripts = val.first;
+              _reorderMode = false;
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final grouped = _groupedScripts;
+    final filtered = _filteredScripts;
+    final grouped = <String, List<ScriptConfig>>{};
+    for (final s in filtered) {
+      final g = s.group.isEmpty ? '' : s.group;
+      grouped.putIfAbsent(g, () => []).add(s);
+    }
     final orderedCats = _orderedCategories(grouped);
     return Scaffold(
       appBar: AppBar(
@@ -546,6 +647,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Scripts – reorder mode
             if (_isOnline && _activeSection == 0 && _reorderMode && _scripts.isNotEmpty) ...[
+              // Scope toggle in reorder mode too
+              _buildScopeToggle(context),
+              const SizedBox(height: 8),
               const Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text(
@@ -556,10 +660,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ReorderableListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _scripts.length,
+                itemCount: filtered.length,
                 onReorder: _reorderScripts,
                 itemBuilder: (context, index) {
-                  final script = _scripts[index];
+                  final script = filtered[index];
                   return ListTile(
                     key: ValueKey(script.id),
                     leading: const Icon(Icons.drag_handle),
@@ -571,6 +675,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Scripts – normal mode
             ] else if (_isOnline && _activeSection == 0 && !_reorderMode && _scripts.isNotEmpty) ...[
+              _buildScopeToggle(context),
+              const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -580,15 +686,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSpacing: 12,
                   childAspectRatio: 1.6,
                 ),
-                itemCount: _scripts.length,
+                itemCount: filtered.length,
                 itemBuilder: (context, index) {
-                  final script = _scripts[index];
+                  final script = filtered[index];
                   return ScriptButton(
                     script: script,
                     onPressed: () => _runScript(script),
                   );
                 },
               ),
+              if (filtered.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      _showGlobalScripts
+                          ? 'Keine systemübergreifenden Skripte konfiguriert.'
+                          : 'Keine systemspezifischen Skripte konfiguriert.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
               const SizedBox(height: 8),
             ] else if (_isOnline && _activeSection == 0 && !_reorderMode && _scripts.isEmpty) ...[
               const Center(
@@ -813,12 +931,55 @@ class _HomeScreenState extends State<HomeScreen> {
             ] else if (!_isOnline && !_checking) ...[
               const Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
+                  padding: EdgeInsets.symmetric(vertical: 24),
                   child: Column(
                     children: [
                       Icon(Icons.cloud_off, size: 48, color: Colors.grey),
                       SizedBox(height: 12),
                       Text('PC ist offline. Sende Wake-on-LAN zum Starten.'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Neu koppeln',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Gib den Kopplungscode vom PC-Agent ein, um dich zu verbinden.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _offlinePairCodeCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Kopplungscode',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.vpn_key_outlined),
+                        ),
+                        keyboardType: TextInputType.number,
+                        enabled: !_offlinePairing,
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: _offlinePairing ? null : _pairFromHomeScreen,
+                        icon: _offlinePairing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Icon(Icons.link),
+                        label: Text(_offlinePairing ? 'Verbinde...' : 'Koppeln'),
+                      ),
                     ],
                   ),
                 ),

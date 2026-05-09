@@ -25,16 +25,19 @@ class TestScriptConfig:
         assert s.timeout == 30
         assert s.group == ""
         assert s.order == 0
+        assert s.is_global is False
 
     def test_all_fields(self):
         s = ScriptConfig(
             id="shutdown", name="Herunterfahren", command="shutdown /s /t 0",
             icon="power_off", confirm=True, timeout=10, group="System", order=3,
+            is_global=True,
         )
         assert s.id == "shutdown"
         assert s.confirm is True
         assert s.group == "System"
         assert s.order == 3
+        assert s.is_global is True
 
 
 class TestAppConfig:

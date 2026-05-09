@@ -22,6 +22,7 @@ async def list_scripts():
             confirm=s.confirm,
             group=s.group,
             order=s.order,
+            is_global=s.is_global,
         )
         for s in scripts
     ]

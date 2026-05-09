@@ -5,6 +5,7 @@ class ScriptConfig {
   final bool confirm;
   final String group;
   final int order;
+  final bool isGlobal;
 
   const ScriptConfig({
     required this.id,
@@ -13,6 +14,7 @@ class ScriptConfig {
     required this.confirm,
     this.group = '',
     this.order = 0,
+    this.isGlobal = false,
   });
 
   factory ScriptConfig.fromJson(Map<String, dynamic> json) => ScriptConfig(
@@ -22,6 +24,7 @@ class ScriptConfig {
         confirm: json['confirm'] as bool? ?? false,
         group: json['group'] as String? ?? '',
         order: json['order'] as int? ?? 0,
+        isGlobal: json['is_global'] as bool? ?? false,
       );
 }
 

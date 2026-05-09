@@ -11,6 +11,7 @@ void main() {
         'confirm': true,
         'group': 'System',
         'order': 3,
+        'is_global': true,
       };
       final s = ScriptConfig.fromJson(json);
       expect(s.id, 'shutdown');
@@ -19,6 +20,7 @@ void main() {
       expect(s.confirm, true);
       expect(s.group, 'System');
       expect(s.order, 3);
+      expect(s.isGlobal, true);
     });
 
     test('fromJson with defaults', () {
@@ -28,6 +30,7 @@ void main() {
       expect(s.confirm, false);
       expect(s.group, '');
       expect(s.order, 0);
+      expect(s.isGlobal, false);
     });
 
     test('fromJson with null optional fields', () {
@@ -38,12 +41,14 @@ void main() {
         'confirm': null,
         'group': null,
         'order': null,
+        'is_global': null,
       };
       final s = ScriptConfig.fromJson(json);
       expect(s.icon, 'play_arrow');
       expect(s.confirm, false);
       expect(s.group, '');
       expect(s.order, 0);
+      expect(s.isGlobal, false);
     });
   });
 

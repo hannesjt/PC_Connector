@@ -86,6 +86,9 @@ class TestScriptsEndpoint:
         # Should be sorted by order
         assert scripts[0]["id"] == "s1"
         assert scripts[1]["id"] == "s2"
+        # is_global field should be present
+        assert "is_global" in scripts[0]
+        assert scripts[0]["is_global"] is False
 
     def test_list_scripts_unauthorized(self, client):
         r = client.get("/api/scripts")

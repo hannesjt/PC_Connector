@@ -22,6 +22,7 @@ class ScriptConfig(BaseModel):
     timeout: int = 30
     group: str = ""
     order: int = 0
+    is_global: bool = False
 
 
 class AppConfig(BaseModel):
@@ -57,6 +58,7 @@ class ScriptListItem(BaseModel):
     confirm: bool
     group: str = ""
     order: int = 0
+    is_global: bool = False
 
 
 class ChainStep(BaseModel):
