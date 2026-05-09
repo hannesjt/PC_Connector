@@ -76,47 +76,28 @@ Im BIOS/UEFI unter „Power Management" → „Wake on LAN" oder „PCI-E Power 
 
 **Schritt 2 – Netzwerkkarte konfigurieren**  
 Geräte-Manager → Netzwerkkarte → Eigenschaften → Energieverwaltung → „Gerät kann den Computer aus dem Ruhezustand aktivieren" ankreuzen.
+Geräte-Manager → Netzwerkkarte → Eigenschaften → Erweitert -> „Wake on Magic Packet" auf „Enabled" setzen.
 
-**Schritt 3 – PC Agent einrichten**
+3. `PC_Connector_Agent.exe` auf dem PC herunterladen und starten.
 
-1. `PC_Connector_Agent.exe` herunterladen und z.B. nach `C:\Tools\PC_Connector\` legen
-2. Beim ersten Start wird `config.yaml` automatisch angelegt
-3. `config.yaml` anpassen (Vorlage: `config.yaml.example`):
+4. Weboberfläche unter im Browser unter `http://localhost:8420` öffnen oder per Rechtsklick auf das Icon in der Taskleiste im System-Tray und „Website öffnen" auswählen.
 
-```yaml
-pc:
-  name: Mein-PC            # Anzeigename in der App
-  mac: AA:BB:CC:DD:EE:FF   # MAC-Adresse der Netzwerkkarte (ipconfig /all)
-  ip: 192.168.1.100        # Feste lokale IP-Adresse des PCs
-
-api:
-  port: 8420
-```
-
-> **Tipp – MAC-Adresse finden:** Eingabeaufforderung → `ipconfig /all` → „Physikalische Adresse" der aktiven Netzwerkkarte.
-
-> **Tipp – Feste IP:** Im Router für den PC eine feste IP-Adresse per DHCP-Reservierung vergeben (über die MAC-Adresse).
-
-4. EXE starten – Weboberfläche erreichbar unter: `http://localhost:8420`
-
-**Optional – Autostart mit Windows**  
-Win + R → `shell:startup` → Verknüpfung der EXE in den geöffneten Ordner ziehen. Der PC Agent startet dann automatisch beim Windows-Login.
+5. Auf „Code generieren" klicken.
 
 ---
 
 ### Android App
 
-1. `app-arm64-v8a-release.apk` auf das Handy übertragen (USB-Kabel oder im Browser öffnen)
+1. `app-arm64-v8a-release.apk` auf dem Handy herunterladen.
 2. Vor der Installation: **Einstellungen → Sicherheit → Aus unbekannten Quellen installieren** aktivieren
 3. APK antippen und installieren
-4. App starten → PC wird automatisch im Netzwerk gefunden
-5. Auf „Koppeln" tippen → Pairing-Code in der Weboberfläche des PCs generieren (`http://PC-IP:8420`) und in der App eingeben
+4. App starten -> Gerät hinzufügen -> Namen und den Code auf der Website eingeben -> Verbinden.
 
 ---
 
 ## Weboberfläche
 
-Erreichbar unter `http://PC-IP:8420` im lokalen Netzwerk (auch direkt am PC via `localhost`).
+Erreichbar unter `localhost`.
 
 | Bereich | Funktion |
 |---|---|
@@ -171,51 +152,6 @@ build_apk.bat
 ```
 
 Ausgabe: `mobile_app\build\app\outputs\flutter-apk\`
-
----
-
-## Entwicklung
-
-### Projektstruktur
-
-```
-PC_Connector/
-├── pc_agent/               # Python FastAPI Server
-│   ├── main.py             # Einstiegspunkt
-│   ├── routers/            # API-Endpunkte (scripts, web, pairing, status)
-│   ├── services/           # Geschäftslogik (auth, config, script runner, WoL)
-│   ├── models/             # Pydantic-Schemas
-│   ├── templates/          # Weboberfläche (index.html)
-│   ├── tests/              # pytest-Tests (76 Tests)
-│   └── config.yaml.example # Konfigurationsvorlage
-├── mobile_app/             # Flutter Android App
-│   ├── lib/
-│   │   ├── main.dart
-│   │   ├── screens/        # Bildschirme (Home, Setup, Geräteliste, Ergebnis)
-│   │   ├── services/       # API, Storage, Discovery, WoL
-│   │   ├── models/         # Datenmodelle
-│   │   └── widgets/        # UI-Komponenten
-│   └── test/               # Flutter-Tests (31 Tests)
-├── assets/icon/            # App-Icon (PNG + ICO)
-├── .github/workflows/      # CI/CD (Tests + Release-Build)
-├── build_agent.bat         # EXE bauen
-└── build_apk.bat           # APK bauen
-```
-
-### Backend-Tests
-
-```bash
-cd pc_agent
-pip install -r requirements.txt pytest pytest-asyncio httpx
-pytest tests/ -v
-```
-
-### Flutter-Tests
-
-```bash
-cd mobile_app
-flutter test
-```
 
 ---
 
