@@ -1,15 +1,9 @@
 import json
 import secrets
-import sys
 import time
 from pathlib import Path
 
-
-def _base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent
-    return Path(__file__).parent.parent
-
+from services.paths import data_dir
 
 _pairing_code: str | None = None
 _pairing_code_expires: float = 0
@@ -18,7 +12,7 @@ _loaded = False
 
 
 def _devices_file() -> Path:
-    return _base_dir() / "paired_devices.json"
+    return data_dir() / "paired_devices.json"
 
 
 def _ensure_loaded():

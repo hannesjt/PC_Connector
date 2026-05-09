@@ -1,18 +1,12 @@
 import json
-import sys
 from pathlib import Path
 
 from models.schemas import ScriptChain
-
-
-def _base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent
-    return Path(__file__).parent.parent
+from services.paths import data_dir
 
 
 def _chains_path() -> Path:
-    return _base_dir() / "chains.json"
+    return data_dir() / "chains.json"
 
 
 def _load_raw() -> list[dict]:

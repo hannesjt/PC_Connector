@@ -6,27 +6,14 @@ import sys
 import yaml
 
 from models.schemas import AppConfig
+from services.paths import data_dir, bundled_example
 
 _config: AppConfig | None = None
 
 
-def _base_dir() -> Path:
-    """Return the directory next to the EXE (frozen) or the pc_agent source root."""
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent
-    return Path(__file__).parent.parent
-
-
-def _example_path() -> Path:
-    """Location of config.yaml.example – bundled inside the EXE or in the source tree."""
-    if getattr(sys, "frozen", False):
-        return Path(sys._MEIPASS) / "config.yaml.example"  # type: ignore[attr-defined]
-    return Path(__file__).parent.parent / "config.yaml.example"
-
-
 def _create_default_config(config_path: Path) -> None:
     """Copy config.yaml.example to config_path and open it for the user to edit."""
-    example = _example_path()
+    example = bundled_example()
     if example.exists():
         shutil.copy(example, config_path)
     else:
@@ -44,7 +31,8 @@ def _create_default_config(config_path: Path) -> None:
         )
 
     msg = (
-        f"Eine neue config.yaml wurde erstellt:\n{config_path}\n\n"
+        f"Eine neue Konfigurationsdatei wurde erstellt:\n\n"
+        f"{config_path}\n\n"
         "Bitte trage dort deine PC-Daten ein (Name und MAC-Adresse)\n"
         "und starte den PC Connector Agent danach erneut."
     )
@@ -69,7 +57,7 @@ def _create_default_config(config_path: Path) -> None:
 
 def load_config(path: str = "config.yaml") -> AppConfig:
     global _config
-    config_path = _base_dir() / path
+    config_path = data_dir() / path
     if not config_path.exists():
         _create_default_config(config_path)  # exits after showing instructions
     with open(config_path, encoding="utf-8") as f:
@@ -87,7 +75,7 @@ def get_config() -> AppConfig:
 def save_config(path: str = "config.yaml"):
     if _config is None:
         return
-    config_path = _base_dir() / path
+    config_path = data_dir() / path
     data = _config.model_dump()
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
