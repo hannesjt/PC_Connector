@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _reorderScripts(int oldIndex, int newIndex) async {
+  void _reorderScripts(int oldIndex, int newIndex) {
     setState(() {
       if (newIndex > oldIndex) newIndex--;
       final item = _scripts.removeAt(oldIndex);

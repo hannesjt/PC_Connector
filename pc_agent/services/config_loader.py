@@ -29,3 +29,14 @@ def save_config(path: str = "config.yaml"):
     data = _config.model_dump()
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
+def get_ordered_groups(config: AppConfig) -> list[tuple[str, list[str]]]:
+    """Returns (group_name, script_ids) pairs in category_order, unknown groups appended."""
+    groups: dict[str, list[str]] = {}
+    for s in config.scripts:
+        if s.group:
+            groups.setdefault(s.group, []).append(s.id)
+    known = [g for g in config.category_order if g in groups]
+    rest = [g for g in groups if g not in config.category_order]
+    return [(g, groups[g]) for g in known + rest]

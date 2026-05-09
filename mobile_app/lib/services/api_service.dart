@@ -23,13 +23,6 @@ class ApiService {
     return h;
   }
 
-  /// Pair with the PC agent using a 6-digit code.
-  /// Returns the device token on success, null on failure.
-  Future<String?> pair(String code, String deviceName) async {
-    final result = await pairFull(code, deviceName);
-    return result?.token;
-  }
-
   /// Pair and return full result including MAC and PC name.
   Future<PairingResult?> pairFull(String code, String deviceName) async {
     try {

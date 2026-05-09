@@ -71,13 +71,19 @@ class ScriptChain(BaseModel):
     order: int = 0
 
 
-class ScriptRunRequest(BaseModel):
-    pass
-
-
 class ScriptRunResponse(BaseModel):
     script_id: str
     success: bool
-    exit_code: int
-    stdout: str
-    stderr: str
+    stdout: str = ""
+    stderr: str = ""
+    exit_code: int = 0
+
+
+class ReorderRequest(BaseModel):
+    ordered_ids: list[str]
+
+
+class AssignGroupRequest(BaseModel):
+    group: str
+    script_ids: list[str]
+    old_group: str | None = None

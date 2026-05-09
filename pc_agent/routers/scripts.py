@@ -1,11 +1,10 @@
 import asyncio
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 
-from models.schemas import ScriptChain, ScriptListItem, ScriptRunResponse
+from models.schemas import AssignGroupRequest, ReorderRequest, ScriptChain, ScriptListItem, ScriptRunResponse
 from services.chains_service import get_chain, get_chains, reorder_chains
-from services.config_loader import get_config, save_config
+from services.config_loader import get_config, get_ordered_groups, save_config
 from services.script_runner import run_script
 
 router = APIRouter(prefix="/api", tags=["scripts"])
@@ -28,22 +27,6 @@ async def list_scripts():
     ]
 
 
-@router.get("/groups")
-async def list_groups():
-    config = get_config()
-    groups: dict[str, list[str]] = {}
-    for s in config.scripts:
-        if s.group:
-            groups.setdefault(s.group, []).append(s.id)
-    return [{"name": g, "script_ids": ids} for g, ids in groups.items()]
-
-
-class AssignGroupRequest(BaseModel):
-    group: str
-    script_ids: list[str]
-    old_group: str | None = None
-
-
 @router.post("/scripts/assign-group")
 async def assign_group(req: AssignGroupRequest):
     config = get_config()
@@ -60,19 +43,6 @@ async def assign_group(req: AssignGroupRequest):
     return {"success": True}
 
 
-@router.post("/scripts/{script_id}/run", response_model=ScriptRunResponse)
-async def run_script_endpoint(script_id: str):
-    config = get_config()
-    script = next((s for s in config.scripts if s.id == script_id), None)
-    if script is None:
-        raise HTTPException(status_code=404, detail=f"Script '{script_id}' not found")
-    return await run_script(script)
-
-
-class ReorderRequest(BaseModel):
-    ordered_ids: list[str]
-
-
 @router.post("/scripts/reorder")
 async def reorder_scripts(req: ReorderRequest):
     config = get_config()
@@ -82,6 +52,15 @@ async def reorder_scripts(req: ReorderRequest):
             s.order = order_map[s.id]
     save_config()
     return {"success": True}
+
+
+@router.post("/scripts/{script_id}/run", response_model=ScriptRunResponse)
+async def run_script_endpoint(script_id: str):
+    config = get_config()
+    script = next((s for s in config.scripts if s.id == script_id), None)
+    if script is None:
+        raise HTTPException(status_code=404, detail=f"Script '{script_id}' not found")
+    return await run_script(script)
 
 
 @router.get("/chains", response_model=list[ScriptChain])
@@ -98,14 +77,8 @@ async def reorder_chains_endpoint(req: ReorderRequest):
 @router.get("/categories")
 async def list_categories():
     config = get_config()
-    order = config.category_order
-    groups: dict[str, list[str]] = {}
-    for s in config.scripts:
-        if s.group:
-            groups.setdefault(s.group, []).append(s.id)
-    known = [g for g in order if g in groups]
-    rest = [g for g in groups if g not in order]
-    return {"ordered": known + rest}
+    ordered = get_ordered_groups(config)
+    return {"ordered": [name for name, _ in ordered]}
 
 
 @router.post("/categories/reorder")

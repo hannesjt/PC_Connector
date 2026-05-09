@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from models.schemas import ScriptChain, ScriptConfig
+from models.schemas import AssignGroupRequest, ReorderRequest, ScriptChain, ScriptConfig
 from services import auth_service
 from services.chains_service import delete_chain, get_chains, save_chain, reorder_chains
-from services.config_loader import get_config, save_config
+from services.config_loader import get_config, get_ordered_groups, save_config
 
 router = APIRouter(tags=["web"])
 
@@ -81,10 +81,6 @@ async def delete_script(script_id: str):
     return {"success": True}
 
 
-class ReorderRequest(BaseModel):
-    ordered_ids: list[str]
-
-
 @router.post("/web/config/scripts/reorder")
 async def reorder_scripts(req: ReorderRequest):
     config = get_config()
@@ -99,24 +95,11 @@ async def reorder_scripts(req: ReorderRequest):
 # --- Groups ---
 
 
-class AssignGroupRequest(BaseModel):
-    group: str
-    script_ids: list[str]
-    old_group: str | None = None
-
-
 @router.get("/web/groups")
 async def list_groups_web():
     config = get_config()
-    groups: dict[str, list[str]] = {}
-    for s in config.scripts:
-        if s.group:
-            groups.setdefault(s.group, []).append(s.id)
-    order = config.category_order
-    known = [g for g in order if g in groups]
-    rest = [g for g in groups if g not in order]
-    ordered = known + rest
-    return [{"name": g, "script_ids": groups[g]} for g in ordered]
+    ordered = get_ordered_groups(config)
+    return [{"name": name, "script_ids": ids} for name, ids in ordered]
 
 
 @router.post("/web/categories/reorder")
