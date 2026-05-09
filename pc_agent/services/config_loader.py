@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 import yaml
 
@@ -7,9 +8,23 @@ from models.schemas import AppConfig
 _config: AppConfig | None = None
 
 
+def _base_dir() -> Path:
+    """Return the directory next to the EXE (frozen) or the pc_agent source root."""
+    if getattr(sys, "frozen", False):
+        # Running as PyInstaller bundle – use the folder containing the EXE
+        return Path(sys.executable).parent
+    # Running from source
+    return Path(__file__).parent.parent
+
+
 def load_config(path: str = "config.yaml") -> AppConfig:
     global _config
-    config_path = Path(__file__).parent.parent / path
+    config_path = _base_dir() / path
+    if not config_path.exists():
+        raise FileNotFoundError(
+            f"config.yaml nicht gefunden: {config_path}\n"
+            "Bitte config.yaml.example kopieren und als config.yaml anpassen."
+        )
     with open(config_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     _config = AppConfig(**raw)
@@ -25,7 +40,7 @@ def get_config() -> AppConfig:
 def save_config(path: str = "config.yaml"):
     if _config is None:
         return
-    config_path = Path(__file__).parent.parent / path
+    config_path = _base_dir() / path
     data = _config.model_dump()
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)

@@ -1,19 +1,28 @@
 import json
+import sys
 from pathlib import Path
 
 from models.schemas import ScriptChain
 
-_CHAINS_PATH = Path(__file__).parent.parent / "chains.json"
+
+def _base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent.parent
+
+
+def _chains_path() -> Path:
+    return _base_dir() / "chains.json"
 
 
 def _load_raw() -> list[dict]:
-    if not _CHAINS_PATH.exists():
+    if not _chains_path().exists():
         return []
-    return json.loads(_CHAINS_PATH.read_text(encoding="utf-8"))
+    return json.loads(_chains_path().read_text(encoding="utf-8"))
 
 
 def _save_raw(chains: list[dict]):
-    _CHAINS_PATH.write_text(json.dumps(chains, indent=2, ensure_ascii=False), encoding="utf-8")
+    _chains_path().write_text(json.dumps(chains, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def get_chains() -> list[ScriptChain]:

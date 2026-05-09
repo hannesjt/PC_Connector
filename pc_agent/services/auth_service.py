@@ -1,26 +1,37 @@
 import json
 import secrets
+import sys
 import time
 from pathlib import Path
+
+
+def _base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent
+    return Path(__file__).parent.parent
+
 
 _pairing_code: str | None = None
 _pairing_code_expires: float = 0
 _paired_devices: dict[str, dict] = {}
-_devices_file = Path(__file__).parent.parent / "paired_devices.json"
 _loaded = False
+
+
+def _devices_file() -> Path:
+    return _base_dir() / "paired_devices.json"
 
 
 def _ensure_loaded():
     global _paired_devices, _loaded
     if not _loaded:
-        if _devices_file.exists():
-            with open(_devices_file, encoding="utf-8") as f:
+        if _devices_file().exists():
+            with open(_devices_file(), encoding="utf-8") as f:
                 _paired_devices = json.load(f)
         _loaded = True
 
 
 def _save():
-    with open(_devices_file, "w", encoding="utf-8") as f:
+    with open(_devices_file(), "w", encoding="utf-8") as f:
         json.dump(_paired_devices, f, indent=2)
 
 
