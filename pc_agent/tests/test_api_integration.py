@@ -28,8 +28,6 @@ def _setup_env(tmp_path):
     }
     config_path.write_text(yaml.dump(data), encoding="utf-8")
     config_loader._config = None
-    config_loader.load_config(str(config_path))
-
     # Chains
     chains_path = tmp_path / "chains.json"
     chains_data = [
@@ -43,8 +41,9 @@ def _setup_env(tmp_path):
     auth_service._paired_devices = {"test_token_1234567890": {"name": "TestPhone", "paired_at": 0}}
     auth_service._loaded = True
 
-    with patch.object(chains_service, "_CHAINS_PATH", chains_path), \
+    with patch.object(chains_service, "data_dir", return_value=tmp_path), \
          patch.object(auth_service, "_save"):
+        config_loader.load_config(str(config_path))
         # Import app after patching
         from main import app
         yield app, config_path

@@ -12,10 +12,10 @@ from services import chains_service
 
 @pytest.fixture(autouse=True)
 def _use_tmp_chains(tmp_path):
-    """Redirect chains service to a temp file for each test."""
+    """Redirect chains service to a temp directory for each test."""
     chains_file = tmp_path / "chains.json"
     chains_file.write_text("[]", encoding="utf-8")
-    with patch.object(chains_service, "_CHAINS_PATH", chains_file):
+    with patch.object(chains_service, "data_dir", return_value=tmp_path):
         yield chains_file
 
 

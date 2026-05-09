@@ -2,7 +2,7 @@
 Central path resolution for PC Connector Agent.
 
 Data files (config.yaml, paired_devices.json, chains.json) are stored in:
-  - Frozen (EXE):  %APPDATA%\PC Connector\
+  - Frozen (EXE):  %%APPDATA%%\\PC Connector\\
   - Source / dev:  <repo>/pc_agent/   (unchanged behaviour)
 """
 

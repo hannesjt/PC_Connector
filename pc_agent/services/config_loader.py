@@ -57,7 +57,8 @@ def _create_default_config(config_path: Path) -> None:
 
 def load_config(path: str = "config.yaml") -> AppConfig:
     global _config
-    config_path = data_dir() / path
+    p = Path(path)
+    config_path = p if p.is_absolute() else data_dir() / path
     if not config_path.exists():
         _create_default_config(config_path)  # exits after showing instructions
     with open(config_path, encoding="utf-8") as f:
