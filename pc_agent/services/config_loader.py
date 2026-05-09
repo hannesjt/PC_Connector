@@ -48,8 +48,30 @@ def _create_default_config(config_path: Path) -> None:
         f"api:\n"
         f"  host: \"0.0.0.0\"\n"
         f"  port: 8420\n\n"
-        f"scripts: []\n"
-        f"category_order: []\n",
+        f"scripts:\n"
+        f"  - id: shutdown\n"
+        f"    name: Herunterfahren\n"
+        f"    icon: power_settings_new\n"
+        f"    command: \"shutdown /s /t 0\"\n"
+        f"    confirm: true\n"
+        f"    group: System\n"
+        f"    order: 0\n"
+        f"  - id: restart\n"
+        f"    name: Neu starten\n"
+        f"    icon: restart_alt\n"
+        f"    command: \"shutdown /r /t 0\"\n"
+        f"    confirm: true\n"
+        f"    group: System\n"
+        f"    order: 1\n"
+        f"  - id: lock\n"
+        f"    name: Sperren\n"
+        f"    icon: lock\n"
+        f"    command: \"rundll32.exe user32.dll,LockWorkStation\"\n"
+        f"    confirm: false\n"
+        f"    group: System\n"
+        f"    order: 2\n\n"
+        f"category_order:\n"
+        f"  - System\n",
         encoding="utf-8",
     )
 
