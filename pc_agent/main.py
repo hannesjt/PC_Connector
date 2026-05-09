@@ -14,6 +14,61 @@ from services.config_loader import load_config
 from services.discovery_service import start_discovery_listener
 
 
+# ---------------------------------------------------------------------------
+# Single-instance guard
+# ---------------------------------------------------------------------------
+
+def _ensure_single_instance() -> object:
+    """
+    Prevent the agent from being started more than once.
+
+    On Windows: creates a named mutex.  A second instance detects the
+    existing mutex and exits with a user-friendly message.
+
+    On other platforms: falls back to a lock file in the temp directory.
+
+    Returns the lock handle so the caller can keep it alive for the
+    duration of the process.
+    """
+    if sys.platform == "win32":
+        import ctypes
+        _MUTEX_NAME = "Global\\PCConnectorAgent_SingleInstance"
+        handle = ctypes.windll.kernel32.CreateMutexW(None, True, _MUTEX_NAME)
+        last_err = ctypes.windll.kernel32.GetLastError()
+        ERROR_ALREADY_EXISTS = 183
+        if last_err == ERROR_ALREADY_EXISTS:
+            try:
+                import ctypes.wintypes
+                MB_OK = 0x00
+                MB_ICONWARNING = 0x30
+                HWND_DESKTOP = 0
+                ctypes.windll.user32.MessageBoxW(
+                    HWND_DESKTOP,
+                    "PC Connector Agent läuft bereits im Hintergrund.\n"
+                    "Schaue in der Taskleiste nach dem Symbol.",
+                    "PC Connector Agent",
+                    MB_OK | MB_ICONWARNING,
+                )
+            except Exception:
+                pass
+            sys.exit(0)
+        return handle  # keep alive
+    else:
+        import fcntl
+        import tempfile
+        lock_path = Path(tempfile.gettempdir()) / "pc_connector_agent.lock"
+        lock_file = open(lock_path, "w")
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            print(
+                "PC Connector Agent läuft bereits. Beende.",
+                file=sys.stderr,
+            )
+            sys.exit(0)
+        return lock_file  # keep alive
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     transport = await start_discovery_listener()
@@ -56,6 +111,9 @@ if __name__ == "__main__":
     import pystray
     import uvicorn
     from PIL import Image
+
+    # Block a second instance before doing anything else.
+    _lock = _ensure_single_instance()
 
     # In a frozen EXE there is no console, so sys.stdout/stderr are None.
     # uvicorn's logging formatter calls .isatty() on them → AttributeError.
