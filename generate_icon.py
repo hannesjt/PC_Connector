@@ -49,17 +49,30 @@ draw.rectangle([472, MY1, 552, MY1 + 80], fill=WHITE)
 rounded_rect(draw, (350, MY1 + 70, 674, MY1 + 110), 20, WHITE)
 
 # ── Lightning bolt inside screen ─────────────────────────
-BOLT = (255, 236, 64)    # amber
+BOLT        = (255, 214, 0)    # golden yellow
+BOLT_SHADOW = (255, 160, 0)    # darker amber for depth
 CX = (SX0 + SX1) // 2
 CY = (SY0 + SY1) // 2
+
+# Classic bolt: wide top-half, narrow waist, wide bottom-half
+# Points go clockwise around the outer edge, then back up the inner cut
 bolt_pts = [
-    (CX + 60,  SY0 + 40),
-    (CX - 20,  CY - 10),
-    (CX + 20,  CY - 10),
-    (CX - 60,  SY1 - 40),
-    (CX + 10,  CY + 30),
-    (CX - 30,  CY + 30),
+    # top point (upper-right)
+    (CX + 80,  SY0 + 50),
+    # ride right side down to waist
+    (CX + 10,  CY +  5),
+    # inner notch – top-right of the waist gap
+    (CX + 55,  CY +  5),
+    # bottom point (lower-left)
+    (CX - 80,  SY1 - 50),
+    # ride left side up to waist
+    (CX - 10,  CY -  5),
+    # inner notch – bottom-left of the waist gap
+    (CX - 55,  CY -  5),
 ]
+# Shadow (offset slightly down-right for depth)
+shadow_pts = [(x+6, y+6) for x, y in bolt_pts]
+draw.polygon(shadow_pts, fill=BOLT_SHADOW)
 draw.polygon(bolt_pts, fill=BOLT)
 
 # ── Phone (right side) ───────────────────────────────────
