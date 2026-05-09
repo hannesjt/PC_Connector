@@ -1,3 +1,4 @@
+import os
 import sys
 import threading
 import webbrowser
@@ -55,6 +56,13 @@ if __name__ == "__main__":
     import pystray
     import uvicorn
     from PIL import Image
+
+    # In a frozen EXE there is no console, so sys.stdout/stderr are None.
+    # uvicorn's logging formatter calls .isatty() on them → AttributeError.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")  # type: ignore[assignment]
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")  # type: ignore[assignment]
 
     config = load_config()
     host = config.api.host if config.api.host != "0.0.0.0" else "localhost"
