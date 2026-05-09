@@ -1,4 +1,6 @@
 from pathlib import Path
+import sys
+import winreg
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
@@ -158,6 +160,61 @@ async def remove_chain(chain_id: str):
 async def reorder_chains_web(req: ReorderRequest):
     reorder_chains(req.ordered_ids)
     return {"success": True}
+
+
+# --- Settings ---
+
+_AUTOSTART_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+_AUTOSTART_NAME = "PC Connector Agent"
+
+
+def _get_exe_path() -> str:
+    """Returns the path to the running EXE (frozen) or a dummy path in dev."""
+    if getattr(sys, "frozen", False):
+        return sys.executable
+    return ""
+
+
+@router.get("/web/settings/autostart")
+async def get_autostart():
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, _AUTOSTART_KEY)
+        try:
+            winreg.QueryValueEx(key, _AUTOSTART_NAME)
+            enabled = True
+        except FileNotFoundError:
+            enabled = False
+        finally:
+            winreg.CloseKey(key)
+    except OSError:
+        enabled = False
+    return {"enabled": enabled}
+
+
+class AutostartRequest(BaseModel):
+    enabled: bool
+
+
+@router.post("/web/settings/autostart")
+async def set_autostart(req: AutostartRequest):
+    exe_path = _get_exe_path()
+    if req.enabled and not exe_path:
+        raise HTTPException(400, "Autostart ist nur in der kompilierten EXE verfügbar")
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, _AUTOSTART_KEY, 0, winreg.KEY_SET_VALUE
+        )
+        if req.enabled:
+            winreg.SetValueEx(key, _AUTOSTART_NAME, 0, winreg.REG_SZ, f'"{exe_path}"')
+        else:
+            try:
+                winreg.DeleteValue(key, _AUTOSTART_NAME)
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+    except OSError as e:
+        raise HTTPException(500, f"Registry-Fehler: {e}")
+    return {"success": True, "enabled": req.enabled}
 
 
 # --- Pairing ---
