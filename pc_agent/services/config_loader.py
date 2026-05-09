@@ -1,58 +1,57 @@
 from pathlib import Path
-import shutil
-import subprocess
+import socket
 import sys
+import uuid
 
 import yaml
 
 from models.schemas import AppConfig
-from services.paths import data_dir, bundled_example
+from services.paths import data_dir
 
 _config: AppConfig | None = None
 
 
-def _create_default_config(config_path: Path) -> None:
-    """Copy config.yaml.example to config_path and open it for the user to edit."""
-    example = bundled_example()
-    if example.exists():
-        shutil.copy(example, config_path)
-    else:
-        # Fallback: write a minimal template
-        config_path.write_text(
-            "pc:\n"
-            "  name: MY_PC\n"
-            "  mac_address: \"AA-BB-CC-DD-EE-FF\"\n\n"
-            "api:\n"
-            "  host: \"0.0.0.0\"\n"
-            "  port: 8420\n\n"
-            "scripts: []\n"
-            "category_order: []\n",
-            encoding="utf-8",
-        )
-
-    msg = (
-        f"Eine neue Konfigurationsdatei wurde erstellt:\n\n"
-        f"{config_path}\n\n"
-        "Bitte trage dort deine PC-Daten ein (Name und MAC-Adresse)\n"
-        "und starte den PC Connector Agent danach erneut."
-    )
-
-    # Open the file in the default editor on Windows
+def _detect_pc_name() -> str:
     try:
-        subprocess.Popen(["notepad.exe", str(config_path)])
+        return socket.gethostname()
+    except Exception:
+        return "MY_PC"
+
+
+def _detect_mac() -> str:
+    """Return the MAC of the fastest active ethernet adapter, or uuid fallback."""
+    try:
+        result = __import__("subprocess").run(
+            ["powershell", "-NoProfile", "-Command",
+             "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and "
+             "$_.InterfaceType -eq 6 } | Sort-Object Speed -Descending | "
+             "Select-Object -First 1).MacAddress"],
+            capture_output=True, text=True, timeout=5,
+        )
+        mac = result.stdout.strip()
+        if mac and len(mac) >= 17:
+            return mac
     except Exception:
         pass
+    raw = f"{uuid.getnode():012X}"
+    return "-".join(raw[i:i+2] for i in range(0, 12, 2))
 
-    # Show a message box on Windows, fall back to console
-    try:
-        import ctypes
-        ctypes.windll.user32.MessageBoxW(0, msg, "PC Connector – Ersteinrichtung", 0x40)
-    except Exception:
-        print("\n" + "=" * 60)
-        print(msg)
-        print("=" * 60 + "\n")
 
-    sys.exit(0)
+def _create_default_config(config_path: Path) -> None:
+    """Auto-detect PC name and MAC address and write config.yaml."""
+    pc_name = _detect_pc_name()
+    mac = _detect_mac()
+    config_path.write_text(
+        f"pc:\n"
+        f"  name: {pc_name}\n"
+        f"  mac_address: \"{mac}\"\n\n"
+        f"api:\n"
+        f"  host: \"0.0.0.0\"\n"
+        f"  port: 8420\n\n"
+        f"scripts: []\n"
+        f"category_order: []\n",
+        encoding="utf-8",
+    )
 
 
 def load_config(path: str = "config.yaml") -> AppConfig:
@@ -60,7 +59,7 @@ def load_config(path: str = "config.yaml") -> AppConfig:
     p = Path(path)
     config_path = p if p.is_absolute() else data_dir() / path
     if not config_path.exists():
-        _create_default_config(config_path)  # exits after showing instructions
+        _create_default_config(config_path)
     with open(config_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     _config = AppConfig(**raw)
