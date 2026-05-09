@@ -49,3 +49,8 @@ desktop.ini
 *.log
 pc_agent/.pytest_cache/
 pc_agent/tests/__pycache__/
+
+# ── PyInstaller build output ─────────────────
+pc_agent/dist/
+pc_agent/build/
+pc_agent/__pycache__/
