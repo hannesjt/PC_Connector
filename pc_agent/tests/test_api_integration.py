@@ -227,6 +227,17 @@ class TestWebEndpoints:
         })
         assert r.status_code == 200
 
+    def test_web_add_global_script(self, client):
+        r = client.post("/web/config/scripts", json={
+            "id": "global_s", "name": "Global Script", "command": "echo global",
+            "is_global": True,
+        })
+        assert r.status_code == 200
+        # Verify it is stored as global
+        cfg = client.get("/web/config").json()
+        gs = next(s for s in cfg["scripts"] if s["id"] == "global_s")
+        assert gs["is_global"] is True
+
     def test_web_add_duplicate_script(self, client):
         r = client.post("/web/config/scripts", json={
             "id": "s1", "name": "Dup", "command": "echo",

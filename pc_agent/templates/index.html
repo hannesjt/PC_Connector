@@ -149,6 +149,10 @@ label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
 <input type="checkbox" id="sf_confirm">
 <label for="sf_confirm">Bestätigung erforderlich</label>
 </div>
+<div class="checkbox-row">
+<input type="checkbox" id="sf_global">
+<label for="sf_global">Für alle Systeme (globales Skript)</label>
+</div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" onclick="saveScript()">Speichern</button>
 <button class="btn btn-outline" onclick="hideScriptForm()">Abbrechen</button>
@@ -343,7 +347,7 @@ async function loadScripts(){
   el.innerHTML=sorted.map(s=>`<div class="script-row" data-id="${s.id}" draggable="true" ondragstart="dragStart(event,'script')" ondragover="dragOver(event)" ondrop="dropScript(event)">
     <span class="drag-handle">⠿</span>
     <div class="script-info">
-      <div class="script-name">${esc(s.name)} ${s.group?`<span class="badge">${esc(s.group)}</span>`:''} ${s.confirm?'<span class="badge badge-warn">Bestätigung</span>':''}</div>
+      <div class="script-name">${esc(s.name)} ${s.group?`<span class="badge">${esc(s.group)}</span>`:''} ${s.confirm?'<span class="badge badge-warn">Bestätigung</span>':''} ${s.is_global?'<span class="badge" style="background:#1a3a1a;color:#81c784">🌐 Alle Systeme</span>':''}</div>
       <div class="script-cmd">${esc(s.command)}</div>
     </div>
     <div class="script-actions">
@@ -404,6 +408,7 @@ async function showScriptForm(script){
   document.getElementById('sf_command').value=script?script.command:'';
   document.getElementById('sf_icon').value=script?script.icon:'play_arrow';
   document.getElementById('sf_confirm').checked=script?script.confirm:false;
+  document.getElementById('sf_global').checked=script?!!script.is_global:false;
   if(!allGroups.length)await loadGroupOptions();
   populateGroupSelect(script?script.group||'':'');
 }
@@ -425,7 +430,8 @@ async function saveScript(){
     command:document.getElementById('sf_command').value.trim(),
     icon:document.getElementById('sf_icon').value,
     timeout:30,
-    confirm:document.getElementById('sf_confirm').checked
+    confirm:document.getElementById('sf_confirm').checked,
+    is_global:document.getElementById('sf_global').checked
   };
   if(!data.name||!data.command){toast('Bitte Name und Befehl ausfüllen');return}
   const url=editingScriptId?BASE+`/web/config/scripts/${editingScriptId}`:BASE+'/web/config/scripts';
