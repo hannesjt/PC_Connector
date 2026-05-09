@@ -69,7 +69,7 @@ if __name__ == "__main__":
     url = f"http://{host}:{config.api.port}"
 
     server = uvicorn.Server(
-        uvicorn.Config("main:app", host=config.api.host, port=config.api.port, reload=False)
+        uvicorn.Config(app, host=config.api.host, port=config.api.port, reload=False)
     )
 
     server_thread = threading.Thread(target=server.run, daemon=True)
