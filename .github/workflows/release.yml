@@ -71,6 +71,8 @@ jobs:
   release:
     needs: [build-agent-exe, build-apk]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -90,6 +92,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: "PC Connector ${{ github.ref_name }}"
           body: |
             ## PC Connector ${{ github.ref_name }}
