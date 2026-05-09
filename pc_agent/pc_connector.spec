@@ -14,6 +14,7 @@ a = Analysis(
     datas=[
         ('templates', 'templates'),
         ('config.yaml.example', '.'),
+        ('../assets/icon/icon.png', '.'),
     ],
     hiddenimports=[
         # uvicorn internals
@@ -44,6 +45,9 @@ a = Analysis(
         'pydantic.deprecated.class_validators',
         # encodings
         'encodings.idna',
+        # pystray (system tray)
+        'pystray._win32',
+        'PIL._tkinter_finder',
     ],
     hookspath=[],
     hooksconfig={},
@@ -71,7 +75,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,          # keep console so log output is visible
+    console=False,         # no console window – app lives in the system tray
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
