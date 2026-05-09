@@ -34,7 +34,6 @@ mobile_app/ios/Pods/
 mobile_app/ios/.symlinks/
 mobile_app/ios/Flutter/Flutter.framework/
 mobile_app/ios/Flutter/Flutter.podspec/
-mobile_app/pubspec.lock
 
 # ── IDE & OS ─────────────────────────────────
 .idea/

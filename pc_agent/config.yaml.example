@@ -1,0 +1,10 @@
+pc:
+  name: MY_PC
+  mac_address: "AA-BB-CC-DD-EE-FF"
+
+api:
+  host: "0.0.0.0"
+  port: 8420
+
+scripts: []
+category_order: []
