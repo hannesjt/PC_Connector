@@ -1,6 +1,5 @@
 from pathlib import Path
 import sys
-import winreg
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
@@ -10,6 +9,11 @@ from models.schemas import AssignGroupRequest, ReorderRequest, ScriptChain, Scri
 from services import auth_service
 from services.chains_service import delete_chain, get_chains, save_chain, reorder_chains
 from services.config_loader import get_config, get_ordered_groups, save_config
+
+if sys.platform == "win32":
+    import winreg  # type: ignore
+else:
+    winreg = None  # type: ignore
 
 router = APIRouter(tags=["web"])
 
@@ -177,6 +181,8 @@ def _get_exe_path() -> str:
 
 @router.get("/web/settings/autostart")
 async def get_autostart():
+    if winreg is None:
+        return {"enabled": False, "supported": False}
     try:
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, _AUTOSTART_KEY)
         try:
@@ -197,6 +203,8 @@ class AutostartRequest(BaseModel):
 
 @router.post("/web/settings/autostart")
 async def set_autostart(req: AutostartRequest):
+    if winreg is None:
+        raise HTTPException(400, "Autostart ist nur unter Windows verfügbar")
     exe_path = _get_exe_path()
     if req.enabled and not exe_path:
         raise HTTPException(400, "Autostart ist nur in der kompilierten EXE verfügbar")
