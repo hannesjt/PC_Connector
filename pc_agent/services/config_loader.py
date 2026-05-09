@@ -1,4 +1,6 @@
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 
 import yaml
@@ -11,20 +13,65 @@ _config: AppConfig | None = None
 def _base_dir() -> Path:
     """Return the directory next to the EXE (frozen) or the pc_agent source root."""
     if getattr(sys, "frozen", False):
-        # Running as PyInstaller bundle – use the folder containing the EXE
         return Path(sys.executable).parent
-    # Running from source
     return Path(__file__).parent.parent
+
+
+def _example_path() -> Path:
+    """Location of config.yaml.example – bundled inside the EXE or in the source tree."""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "config.yaml.example"  # type: ignore[attr-defined]
+    return Path(__file__).parent.parent / "config.yaml.example"
+
+
+def _create_default_config(config_path: Path) -> None:
+    """Copy config.yaml.example to config_path and open it for the user to edit."""
+    example = _example_path()
+    if example.exists():
+        shutil.copy(example, config_path)
+    else:
+        # Fallback: write a minimal template
+        config_path.write_text(
+            "pc:\n"
+            "  name: MY_PC\n"
+            "  mac_address: \"AA-BB-CC-DD-EE-FF\"\n\n"
+            "api:\n"
+            "  host: \"0.0.0.0\"\n"
+            "  port: 8420\n\n"
+            "scripts: []\n"
+            "category_order: []\n",
+            encoding="utf-8",
+        )
+
+    msg = (
+        f"Eine neue config.yaml wurde erstellt:\n{config_path}\n\n"
+        "Bitte trage dort deine PC-Daten ein (Name und MAC-Adresse)\n"
+        "und starte den PC Connector Agent danach erneut."
+    )
+
+    # Open the file in the default editor on Windows
+    try:
+        subprocess.Popen(["notepad.exe", str(config_path)])
+    except Exception:
+        pass
+
+    # Show a message box on Windows, fall back to console
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(0, msg, "PC Connector – Ersteinrichtung", 0x40)
+    except Exception:
+        print("\n" + "=" * 60)
+        print(msg)
+        print("=" * 60 + "\n")
+
+    sys.exit(0)
 
 
 def load_config(path: str = "config.yaml") -> AppConfig:
     global _config
     config_path = _base_dir() / path
     if not config_path.exists():
-        raise FileNotFoundError(
-            f"config.yaml nicht gefunden: {config_path}\n"
-            "Bitte config.yaml.example kopieren und als config.yaml anpassen."
-        )
+        _create_default_config(config_path)  # exits after showing instructions
     with open(config_path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
     _config = AppConfig(**raw)
