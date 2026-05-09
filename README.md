@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="../../releases/latest">
-    <img src="https://img.shields.io/github/v/release/DEIN-USERNAME/PC_Connector?label=Letzter%20Release&style=for-the-badge&logo=github&color=1976D2" alt="Letzter Release">
+    <img src="https://img.shields.io/github/v/release/hannesjt/PC_Connector?label=Letzter%20Release&style=for-the-badge&logo=github&color=1976D2" alt="Letzter Release">
   </a>
   &nbsp;
   <img src="https://img.shields.io/badge/Plattform-Android%20%7C%20Windows-brightgreen?style=for-the-badge&logo=android" alt="Plattform">
