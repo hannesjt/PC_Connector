@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC Connector</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#121212;color:#e0e0e0;min-height:100vh}
+header{background:#1e1e1e;padding:20px 24px;border-bottom:1px solid #333;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.4rem;font-weight:600}
+header span{font-size:1.6rem}
+nav{display:flex;background:#1e1e1e;border-bottom:1px solid #333;padding:0 16px}
+nav button{background:none;border:none;color:#888;padding:14px 20px;cursor:pointer;font-size:.95rem;border-bottom:2px solid transparent;transition:.2s}
+nav button:hover{color:#e0e0e0}
+nav button.active{color:#64b5f6;border-bottom-color:#64b5f6}
+main{max-width:800px;margin:0 auto;padding:24px 16px}
+section{display:none}
+section.active{display:block}
+.card{background:#1e1e1e;border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid #2a2a2a}
+.card h2{font-size:1.1rem;margin-bottom:16px;color:#64b5f6}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:500;transition:.2s}
+.btn-primary{background:#1976d2;color:#fff}
+.btn-primary:hover{background:#1565c0}
+.btn-danger{background:#c62828;color:#fff}
+.btn-danger:hover{background:#b71c1c}
+.btn-sm{padding:6px 14px;font-size:.85rem}
+.btn-outline{background:transparent;border:1px solid #555;color:#e0e0e0}
+.btn-outline:hover{border-color:#64b5f6;color:#64b5f6}
+input,select{background:#2a2a2a;border:1px solid #444;color:#e0e0e0;padding:10px 14px;border-radius:8px;font-size:.9rem;width:100%}
+input:focus,select:focus{outline:none;border-color:#64b5f6}
+label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
+.form-group{margin-bottom:14px}
+.pairing-code{font-size:3rem;font-weight:700;letter-spacing:.5rem;text-align:center;color:#64b5f6;padding:24px;font-family:'Courier New',monospace}
+.pairing-timer{text-align:center;color:#aaa;font-size:.9rem;margin-top:8px}
+.device-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #2a2a2a}
+.device-row:last-child{border-bottom:none}
+.device-info{display:flex;align-items:center;gap:12px}
+.device-icon{width:40px;height:40px;background:#2a2a2a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.script-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #2a2a2a;gap:12px}
+.script-row:last-child{border-bottom:none}
+.script-info{flex:1}
+.script-name{font-weight:500}
+.script-cmd{font-size:.8rem;color:#888;font-family:monospace;margin-top:2px;word-break:break-all}
+.script-actions{display:flex;gap:8px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75rem;background:#333;color:#aaa}
+.badge-warn{background:#4a3000;color:#ffb74d}
+.empty{text-align:center;color:#666;padding:32px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#e0e0e0;padding:12px 24px;border-radius:8px;font-size:.9rem;display:none;z-index:100;border:1px solid #444}
+.row{display:flex;gap:12px;align-items:end}
+.row>*{flex:1}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.checkbox-row input{width:auto}
+.checkbox-row label{margin:0}
+#scriptFormCard{display:none}
+#chainFormCard{display:none}
+.section-tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid #333}
+.section-tab{background:none;border:none;color:#888;padding:10px 18px;cursor:pointer;font-size:.95rem;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.2s}
+.section-tab:hover{color:#e0e0e0}
+.section-tab.active{color:#64b5f6;border-bottom-color:#64b5f6}
+.chain-step{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #2a2a2a}
+.chain-step:last-child{border-bottom:none}
+.drag-handle{cursor:grab;color:#555;font-size:1.1rem;user-select:none}
+</style>
+</head>
+<body>
+
+<header>
+<span>🖥️</span>
+<h1>PC Connector</h1>
+</header>
+
+<nav>
+<button class="active" onclick="showTab('pairing')">Gerätekopplung</button>
+<button onclick="showTab('scripts')">Skripte</button>
+</nav>
+
+<main>
+<!-- PAIRING TAB -->
+<section id="pairing" class="active">
+<div class="card">
+<h2>Neues Gerät koppeln</h2>
+<p style="color:#aaa;margin-bottom:16px">Generiere einen Code und gib ihn in der App auf deinem Handy ein.</p>
+<div id="pairingArea">
+<div style="text-align:center">
+<button class="btn btn-primary" onclick="generateCode()" id="genBtn">Code generieren</button>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Verbundene Geräte</h2>
+<div id="deviceList"><div class="empty">Lade...</div></div>
+</div>
+</section>
+
+<!-- SCRIPTS TAB -->
+<section id="scripts">
+
+<div class="section-tabs">
+  <button class="section-tab active" onclick="showScriptSection('scriptsSub')">Skripte</button>
+  <button class="section-tab" onclick="showScriptSection('chainsSub')">Abläufe</button>
+  <button class="section-tab" onclick="showScriptSection('groupsSub')">Gruppen</button>
+</div>
+
+<!-- SCRIPTS SUB -->
+<div id="scriptsSub">
+<div class="card">
+<h2>Konfigurierte Skripte</h2>
+<div id="scriptList"><div class="empty">Lade...</div></div>
+<div style="margin-top:16px">
+<button class="btn btn-outline" onclick="showScriptForm()">+ Neues Skript</button>
+</div>
+</div>
+
+<div class="card" id="scriptFormCard">
+<h2 id="scriptFormTitle">Neues Skript</h2>
+<div class="row">
+<div class="form-group"><label>Name</label><input id="sf_name" placeholder="Mein Skript"></div>
+<div class="form-group"><label>Gruppe (optional)</label><input id="sf_group" placeholder="z.B. System"></div>
+</div>
+<div class="form-group"><label>Befehl</label><input id="sf_command" placeholder="z.B. shutdown /s /t 0"></div>
+<div class="form-group">
+<label>Icon</label>
+<select id="sf_icon">
+<option value="play_arrow">▶ Play</option>
+<option value="power_off">⏻ Power Off</option>
+<option value="restart_alt">🔄 Restart</option>
+<option value="games">🎮 Games</option>
+<option value="lock">🔒 Lock</option>
+<option value="backup">💾 Backup</option>
+<option value="terminal">⌨ Terminal</option>
+<option value="folder">📁 Folder</option>
+<option value="download">⬇ Download</option>
+<option value="upload">⬆ Upload</option>
+<option value="desktop_windows">🖥 Desktop</option>
+<option value="tv">📺 TV</option>
+<option value="monitor">🖵 Monitor</option>
+</select>
+</div>
+<div class="checkbox-row">
+<input type="checkbox" id="sf_confirm">
+<label for="sf_confirm">Bestätigung erforderlich</label>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" onclick="saveScript()">Speichern</button>
+<button class="btn btn-outline" onclick="hideScriptForm()">Abbrechen</button>
+</div>
+</div>
+</div>
+
+<!-- CHAINS SUB -->
+<div id="chainsSub" style="display:none">
+<div class="card">
+<h2>Abläufe</h2>
+<p style="color:#aaa;font-size:.85rem;margin-bottom:16px">Führe mehrere Skripte nacheinander aus, optional mit Verzögerung.</p>
+<div id="chainList"><div class="empty">Lade...</div></div>
+<div style="margin-top:16px">
+<button class="btn btn-outline" onclick="showChainForm()">+ Neuer Ablauf</button>
+</div>
+</div>
+
+<div class="card" id="chainFormCard">
+<h2 id="chainFormTitle">Neuer Ablauf</h2>
+<div class="form-group"><label>Name</label><input id="cf_name" placeholder="Mein Ablauf"></div>
+<div style="margin-bottom:8px;font-size:.85rem;color:#aaa">Schritte</div>
+<div id="cf_steps"></div>
+<button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="addChainStep()">+ Schritt hinzufügen</button>
+<div style="display:flex;gap:8px;margin-top:16px">
+<button class="btn btn-primary" onclick="saveChain()">Speichern</button>
+<button class="btn btn-outline" onclick="hideChainForm()">Abbrechen</button>
+</div>
+</div>
+</div>
+
+<!-- GROUPS SUB -->
+<div id="groupsSub" style="display:none">
+<div class="card">
+<h2>Gruppen</h2>
+<p style="color:#aaa;font-size:.85rem;margin-bottom:16px">Fasse Skripte in Kategorien zusammen.</p>
+<div id="groupList"><div class="empty">Lade...</div></div>
+<div style="margin-top:16px">
+<button class="btn btn-outline" onclick="showGroupForm()">+ Neue Gruppe</button>
+</div>
+</div>
+
+<div class="card" id="groupFormCard" style="display:none">
+<h2 id="groupFormTitle">Neue Gruppe</h2>
+<div class="form-group"><label>Gruppenname</label><input id="gf_name" placeholder="z.B. System"></div>
+<div style="margin-bottom:8px;font-size:.85rem;color:#aaa">Skripte auswählen</div>
+<div id="gf_scripts" style="max-height:300px;overflow-y:auto;border:1px solid #333;border-radius:6px;padding:8px"></div>
+<div style="display:flex;gap:8px;margin-top:16px">
+<button class="btn btn-primary" onclick="saveGroup()">Speichern</button>
+<button class="btn btn-outline" onclick="hideGroupForm()">Abbrechen</button>
+</div>
+</div>
+</div>
+
+</section>
+
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE='';
+let editingScriptId=null;
+let editingChainId=null;
+let codeTimer=null;
+let allScripts=[];
+
+// Tabs
+function showTab(id){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active');
+  if(id==='pairing'){loadDevices();checkCode()}
+  if(id==='scripts'){loadScripts();loadChains()}
+}
+
+function showScriptSection(sub){
+  document.getElementById('scriptsSub').style.display=sub==='scriptsSub'?'block':'none';
+  document.getElementById('chainsSub').style.display=sub==='chainsSub'?'block':'none';
+  document.getElementById('groupsSub').style.display=sub==='groupsSub'?'block':'none';
+  document.querySelectorAll('.section-tab').forEach((b,i)=>{
+    b.classList.toggle('active',(i===0&&sub==='scriptsSub')||(i===1&&sub==='chainsSub')||(i===2&&sub==='groupsSub'));
+  });
+  if(sub==='chainsSub')loadChains();
+  if(sub==='groupsSub')loadGroups();
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+
+// Pairing
+async function generateCode(){
+  const r=await fetch(BASE+'/web/pairing/generate',{method:'POST'});
+  const d=await r.json();
+  showCode(d.code,d.expires_in);
+}
+
+function showCode(code,seconds){
+  const area=document.getElementById('pairingArea');
+  area.innerHTML=`
+    <div class="pairing-code" id="codeDisplay">${code}</div>
+    <div class="pairing-timer">Gültig für <span id="countdown">${seconds}</span> Sekunden</div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-outline" onclick="generateCode()">Neuen Code generieren</button>
+    </div>`;
+  if(codeTimer)clearInterval(codeTimer);
+  let remaining=seconds;
+  codeTimer=setInterval(()=>{
+    remaining--;
+    const el=document.getElementById('countdown');
+    if(el)el.textContent=remaining;
+    if(remaining<=0){clearInterval(codeTimer);resetCodeArea()}
+  },1000);
+}
+
+function resetCodeArea(){
+  document.getElementById('pairingArea').innerHTML=`
+    <div style="text-align:center">
+      <button class="btn btn-primary" onclick="generateCode()">Code generieren</button>
+    </div>`;
+}
+
+async function checkCode(){
+  const r=await fetch(BASE+'/web/pairing/code');
+  const d=await r.json();
+  if(d.active)showCode(d.code,d.expires_in);
+}
+
+async function loadDevices(){
+  const r=await fetch(BASE+'/web/pairing/devices');
+  const devices=await r.json();
+  const el=document.getElementById('deviceList');
+  if(!devices.length){el.innerHTML='<div class="empty">Noch keine Geräte verbunden.</div>';return}
+  el.innerHTML=devices.map(d=>`
+    <div class="device-row">
+      <div class="device-info">
+        <div class="device-icon">📱</div>
+        <div>
+          <div style="font-weight:500">${esc(d.name||'Unbekanntes Gerät')}</div>
+          <div style="font-size:.8rem;color:#888">Verbunden am ${new Date(d.paired_at*1000).toLocaleDateString('de-DE')}</div>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeDevice('${d.token_prefix}')">Entfernen</button>
+    </div>`).join('');
+}
+
+async function removeDevice(prefix){
+  if(!confirm('Gerät wirklich entfernen?'))return;
+  await fetch(BASE+`/web/pairing/devices/${prefix}`,{method:'DELETE'});
+  toast('Gerät entfernt');loadDevices();
+}
+
+// Scripts
+async function loadScripts(){
+  const r=await fetch(BASE+'/web/config');
+  const d=await r.json();
+  allScripts=d.scripts;
+  const el=document.getElementById('scriptList');
+  if(!d.scripts.length){el.innerHTML='<div class="empty">Keine Skripte konfiguriert.</div>';return}
+
+  // Flat list sorted by order field
+  const sorted=[...d.scripts].sort((a,b)=>(a.order||0)-(b.order||0));
+  el.innerHTML=sorted.map(s=>`<div class="script-row" data-id="${s.id}" draggable="true" ondragstart="dragStart(event,'script')" ondragover="dragOver(event)" ondrop="dropScript(event)">
+    <span class="drag-handle">⠿</span>
+    <div class="script-info">
+      <div class="script-name">${esc(s.name)} ${s.group?`<span class="badge">${esc(s.group)}</span>`:''} ${s.confirm?'<span class="badge badge-warn">Bestätigung</span>':''}</div>
+      <div class="script-cmd">${esc(s.command)}</div>
+    </div>
+    <div class="script-actions">
+      <button class="btn btn-outline btn-sm" onclick='editScript(${JSON.stringify(s)})'>Bearbeiten</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteScript('${s.id}')">Löschen</button>
+    </div>
+  </div>`).join('');
+}
+
+// Drag & drop reorder
+let dragSrcId=null;
+let dragSrcType=null;
+function dragStart(e,type){dragSrcId=e.currentTarget.dataset.id;dragSrcType=type;e.dataTransfer.effectAllowed='move';}
+function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+async function dropScript(e){
+  e.preventDefault();
+  const targetId=e.currentTarget.dataset.id;
+  if(!dragSrcId||dragSrcId===targetId)return;
+  const rows=[...document.querySelectorAll('#scriptList .script-row')].map(r=>r.dataset.id);
+  const from=rows.indexOf(dragSrcId),to=rows.indexOf(targetId);
+  rows.splice(from,1);rows.splice(to,0,dragSrcId);
+  await fetch(BASE+'/web/config/scripts/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ordered_ids:rows})});
+  loadScripts();
+}
+async function dropChain(e){
+  e.preventDefault();
+  const targetId=e.currentTarget.dataset.id;
+  if(!dragSrcId||dragSrcId===targetId)return;
+  const rows=[...document.querySelectorAll('#chainList .script-row')].map(r=>r.dataset.id);
+  const from=rows.indexOf(dragSrcId),to=rows.indexOf(targetId);
+  rows.splice(from,1);rows.splice(to,0,dragSrcId);
+  await fetch(BASE+'/web/chains/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ordered_ids:rows})});
+  loadChains();
+}
+async function dropGroup(e){
+  e.preventDefault();
+  const targetId=e.currentTarget.dataset.id;
+  if(!dragSrcId||dragSrcId===targetId)return;
+  const rows=[...document.querySelectorAll('#groupList .script-row')].map(r=>r.dataset.id);
+  const from=rows.indexOf(dragSrcId),to=rows.indexOf(targetId);
+  rows.splice(from,1);rows.splice(to,0,dragSrcId);
+  await fetch(BASE+'/web/categories/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ordered_ids:rows})});
+  loadGroups();
+}
+
+function showScriptForm(script){
+  editingScriptId=script?script.id:null;
+  document.getElementById('scriptFormCard').style.display='block';
+  document.getElementById('scriptFormTitle').textContent=script?'Skript bearbeiten':'Neues Skript';
+  document.getElementById('sf_name').value=script?script.name:'';
+  document.getElementById('sf_group').value=script?script.group||'':'';
+  document.getElementById('sf_command').value=script?script.command:'';
+  document.getElementById('sf_icon').value=script?script.icon:'play_arrow';
+  document.getElementById('sf_confirm').checked=script?script.confirm:false;
+}
+
+function editScript(s){showScriptForm(s)}
+
+function hideScriptForm(){
+  document.getElementById('scriptFormCard').style.display='none';
+  editingScriptId=null;
+}
+
+async function saveScript(){
+  const name=document.getElementById('sf_name').value.trim();
+  const data={
+    id:editingScriptId||name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''),
+    name:name,
+    group:document.getElementById('sf_group').value.trim(),
+    command:document.getElementById('sf_command').value.trim(),
+    icon:document.getElementById('sf_icon').value,
+    timeout:30,
+    confirm:document.getElementById('sf_confirm').checked
+  };
+  if(!data.name||!data.command){toast('Bitte Name und Befehl ausfüllen');return}
+  const url=editingScriptId?BASE+`/web/config/scripts/${editingScriptId}`:BASE+'/web/config/scripts';
+  const method=editingScriptId?'PUT':'POST';
+  const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(r.ok){toast(editingScriptId?'Skript aktualisiert':'Skript hinzugefügt');hideScriptForm();loadScripts()}
+  else{const e=await r.json();toast('Fehler: '+(e.detail||'Unbekannt'))}
+}
+
+async function deleteScript(id){
+  if(!confirm('Skript wirklich löschen?'))return;
+  await fetch(BASE+`/web/config/scripts/${id}`,{method:'DELETE'});
+  toast('Skript gelöscht');loadScripts();
+}
+
+// Chains
+let chainSteps=[];
+
+async function loadChains(){
+  const r=await fetch(BASE+'/web/chains');
+  const chains=await r.json();
+  const el=document.getElementById('chainList');
+  if(!chains.length){el.innerHTML='<div class="empty">Keine Abläufe konfiguriert.</div>';return}
+  el.innerHTML=chains.map(c=>{
+    const stepNames=c.steps.map(st=>{
+      const s=allScripts.find(x=>x.id===st.script_id);
+      const name=s?s.name:st.script_id;
+      return st.delay_seconds>0?`${name} (+${st.delay_seconds}s)`:name;
+    }).join(' → ');
+    return `<div class="script-row" data-id="${c.id}" draggable="true" ondragstart="dragStart(event,'chain')" ondragover="dragOver(event)" ondrop="dropChain(event)">
+      <span class="drag-handle">⠿</span>
+      <div class="script-info">
+        <div class="script-name">${esc(c.name)}</div>
+        <div class="script-cmd">${esc(stepNames)||'Keine Schritte'}</div>
+      </div>
+      <div class="script-actions">
+        <button class="btn btn-outline btn-sm" onclick='editChain(${JSON.stringify(c)})'>Bearbeiten</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteChain('${c.id}')">Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showChainForm(chain){
+  editingChainId=chain?chain.id:null;
+  chainSteps=chain?chain.steps.map(s=>({...s})):[];
+  document.getElementById('chainFormCard').style.display='block';
+  document.getElementById('chainFormTitle').textContent=chain?'Ablauf bearbeiten':'Neuer Ablauf';
+  document.getElementById('cf_name').value=chain?chain.name:'';
+  renderChainSteps();
+}
+
+function editChain(c){showChainForm(c)}
+
+function hideChainForm(){
+  document.getElementById('chainFormCard').style.display='none';
+  editingChainId=null;chainSteps=[];
+}
+
+function addChainStep(){
+  chainSteps.push({script_id:'',delay_seconds:0});
+  renderChainSteps();
+}
+
+function removeChainStep(i){
+  chainSteps.splice(i,1);renderChainSteps();
+}
+
+function renderChainSteps(){
+  const el=document.getElementById('cf_steps');
+  if(!chainSteps.length){el.innerHTML='<div style="color:#666;font-size:.85rem;padding:8px 0">Noch keine Schritte.</div>';return}
+  el.innerHTML=chainSteps.map((step,i)=>`
+    <div class="chain-step">
+      <span style="color:#555;font-size:.85rem;min-width:20px">${i+1}.</span>
+      <select style="flex:1" onchange="chainSteps[${i}].script_id=this.value">
+        <option value="">-- Skript wählen --</option>
+        ${allScripts.map(s=>`<option value="${s.id}" ${s.id===step.script_id?'selected':''}>${esc(s.name)}</option>`).join('')}
+      </select>
+      <span style="color:#aaa;font-size:.85rem;white-space:nowrap">Verzögerung (s)</span>
+      <input type="number" min="0" value="${step.delay_seconds}" style="width:64px" onchange="chainSteps[${i}].delay_seconds=parseInt(this.value)||0">
+      <button class="btn btn-danger btn-sm" onclick="removeChainStep(${i})">✕</button>
+    </div>`).join('');
+}
+
+async function saveChain(){
+  const name=document.getElementById('cf_name').value.trim();
+  if(!name){toast('Bitte Namen eingeben');return}
+  if(chainSteps.some(s=>!s.script_id)){toast('Bitte alle Schritte ausfüllen');return}
+  const data={
+    id:editingChainId||name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''),
+    name,steps:chainSteps
+  };
+  const url=editingChainId?BASE+`/web/chains/${editingChainId}`:BASE+'/web/chains';
+  const method=editingChainId?'PUT':'POST';
+  const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(r.ok){toast(editingChainId?'Ablauf aktualisiert':'Ablauf erstellt');hideChainForm();loadChains()}
+  else{const e=await r.json();toast('Fehler: '+(e.detail||'Unbekannt'))}
+}
+
+async function deleteChain(id){
+  if(!confirm('Ablauf wirklich löschen?'))return;
+  await fetch(BASE+`/web/chains/${id}`,{method:'DELETE'});
+  toast('Ablauf gelöscht');loadChains();
+}
+
+// Groups
+let editingGroupOldName=null;
+
+async function loadGroups(){
+  if(!allScripts.length){
+    const r=await fetch(BASE+'/web/config');const d=await r.json();allScripts=d.scripts;
+  }
+  const r=await fetch(BASE+'/web/groups');
+  const groups=await r.json();
+  const el=document.getElementById('groupList');
+  if(!groups.length){el.innerHTML='<div class="empty">Keine Gruppen vorhanden.</div>';return}
+  el.innerHTML=groups.map(g=>{
+    const names=g.script_ids.map(id=>{const s=allScripts.find(x=>x.id===id);return s?s.name:id}).join(', ');
+    return `<div class="script-row" data-id="${esc(g.name)}" draggable="true" ondragstart="dragStart(event,'group')" ondragover="dragOver(event)" ondrop="dropGroup(event)">
+      <span class="drag-handle">⠿</span>
+      <div class="script-info">
+        <div class="script-name">📁 ${esc(g.name)}</div>
+        <div class="script-cmd">${esc(names)||'Keine Skripte'}</div>
+      </div>
+      <div class="script-actions">
+        <button class="btn btn-outline btn-sm" onclick='editGroup(${JSON.stringify(g)})'>Bearbeiten</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteGroup('${esc(g.name)}')">Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showGroupForm(group){
+  editingGroupOldName=group?group.name:null;
+  document.getElementById('groupFormCard').style.display='block';
+  document.getElementById('groupFormTitle').textContent=group?'Gruppe bearbeiten':'Neue Gruppe';
+  document.getElementById('gf_name').value=group?group.name:'';
+  const sel=new Set(group?group.script_ids:[]);
+  const el=document.getElementById('gf_scripts');
+  el.innerHTML=allScripts.map(s=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+      <input type="checkbox" value="${s.id}" ${sel.has(s.id)?'checked':''} style="width:16px;height:16px">
+      <span>${esc(s.name)}${s.group&&s.group!==editingGroupOldName?` <span style="color:#888;font-size:.8rem">(${esc(s.group)})</span>`:''}</span>
+    </label>`).join('');
+}
+
+function editGroup(g){showGroupForm(g)}
+
+function hideGroupForm(){
+  document.getElementById('groupFormCard').style.display='none';
+  editingGroupOldName=null;
+}
+
+async function saveGroup(){
+  const name=document.getElementById('gf_name').value.trim();
+  if(!name){toast('Bitte Gruppenname eingeben');return}
+  const scriptIds=[...document.querySelectorAll('#gf_scripts input:checked')].map(cb=>cb.value);
+  const body={group:name,script_ids:scriptIds};
+  if(editingGroupOldName&&editingGroupOldName!==name)body.old_group=editingGroupOldName;
+  const r=await fetch(BASE+'/web/config/groups/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.ok){toast(editingGroupOldName?'Gruppe aktualisiert':'Gruppe erstellt');hideGroupForm();loadGroups();loadScripts()}
+  else{const e=await r.json();toast('Fehler: '+(e.detail||'Unbekannt'))}
+}
+
+async function deleteGroup(name){
+  if(!confirm(`Gruppe "${name}" wirklich löschen? Skripte bleiben erhalten, verlieren nur ihre Gruppe.`))return;
+  const r=await fetch(BASE+'/web/config/groups/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({group:name,script_ids:[]})});
+  if(r.ok){toast('Gruppe gelöscht');loadGroups();loadScripts()}
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// Init
+loadDevices();
+</script>
+</body>
+</html>
+
