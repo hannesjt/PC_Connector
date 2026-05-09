@@ -45,5 +45,7 @@ mobile_app/ios/Flutter/Flutter.podspec/
 Thumbs.db
 desktop.ini
 
-# ── Logs ─────────────────────────────────────
+# ── Logs & caches ────────────────────────────
 *.log
+pc_agent/.pytest_cache/
+pc_agent/tests/__pycache__/

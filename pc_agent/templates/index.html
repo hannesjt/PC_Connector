@@ -109,7 +109,7 @@ label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
 <h2>Konfigurierte Skripte</h2>
 <div id="scriptList"><div class="empty">Lade...</div></div>
 <div style="margin-top:16px">
-<button class="btn btn-outline" onclick="showScriptForm()">+ Neues Skript</button>
+<button class="btn btn-outline" onclick="showScriptFormNew()">+ Neues Skript</button>
 </div>
 </div>
 
@@ -117,7 +117,7 @@ label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
 <h2 id="scriptFormTitle">Neues Skript</h2>
 <div class="row">
 <div class="form-group"><label>Name</label><input id="sf_name" placeholder="Mein Skript"></div>
-<div class="form-group"><label>Gruppe (optional)</label><input id="sf_group" placeholder="z.B. System"></div>
+<div class="form-group"><label>Gruppe (optional)</label><select id="sf_group"><option value="">-- Keine Gruppe --</option></select></div>
 </div>
 <div class="form-group"><label>Befehl</label><input id="sf_command" placeholder="z.B. shutdown /s /t 0"></div>
 <div class="form-group">
@@ -209,6 +209,7 @@ let editingScriptId=null;
 let editingChainId=null;
 let codeTimer=null;
 let allScripts=[];
+let allGroups=[];
 
 // Tabs
 function showTab(id){
@@ -217,7 +218,7 @@ function showTab(id){
   document.getElementById(id).classList.add('active');
   document.querySelector(`nav button[onclick="showTab('${id}')"]`).classList.add('active');
   if(id==='pairing'){loadDevices();checkCode()}
-  if(id==='scripts'){loadScripts();loadChains()}
+  if(id==='scripts'){loadScripts();loadChains();loadGroupOptions()}
 }
 
 function showScriptSection(sub){
@@ -300,6 +301,11 @@ async function removeDevice(prefix){
 }
 
 // Scripts
+async function loadGroupOptions(){
+  const r=await fetch(BASE+'/web/groups');
+  allGroups=await r.json();
+}
+
 async function loadScripts(){
   const r=await fetch(BASE+'/web/config');
   const d=await r.json();
@@ -358,18 +364,27 @@ async function dropGroup(e){
   loadGroups();
 }
 
-function showScriptForm(script){
+function populateGroupSelect(currentGroup){
+  const sel=document.getElementById('sf_group');
+  sel.innerHTML='<option value="">-- Keine Gruppe --</option>'+
+    allGroups.map(g=>`<option value="${esc(g.name)}" ${g.name===currentGroup?'selected':''}>${esc(g.name)}</option>`).join('');
+  sel.value=currentGroup||'';
+}
+
+async function showScriptForm(script){
   editingScriptId=script?script.id:null;
   document.getElementById('scriptFormCard').style.display='block';
   document.getElementById('scriptFormTitle').textContent=script?'Skript bearbeiten':'Neues Skript';
   document.getElementById('sf_name').value=script?script.name:'';
-  document.getElementById('sf_group').value=script?script.group||'':'';
   document.getElementById('sf_command').value=script?script.command:'';
   document.getElementById('sf_icon').value=script?script.icon:'play_arrow';
   document.getElementById('sf_confirm').checked=script?script.confirm:false;
+  if(!allGroups.length)await loadGroupOptions();
+  populateGroupSelect(script?script.group||'':'');
 }
 
-function editScript(s){showScriptForm(s)}
+function editScript(s){showScriptForm(s);}
+function showScriptFormNew(){showScriptForm(null);}
 
 function hideScriptForm(){
   document.getElementById('scriptFormCard').style.display='none';
@@ -546,14 +561,14 @@ async function saveGroup(){
   const body={group:name,script_ids:scriptIds};
   if(editingGroupOldName&&editingGroupOldName!==name)body.old_group=editingGroupOldName;
   const r=await fetch(BASE+'/web/config/groups/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){toast(editingGroupOldName?'Gruppe aktualisiert':'Gruppe erstellt');hideGroupForm();loadGroups();loadScripts()}
+  if(r.ok){toast(editingGroupOldName?'Gruppe aktualisiert':'Gruppe erstellt');hideGroupForm();loadGroups();loadGroupOptions();loadScripts()}
   else{const e=await r.json();toast('Fehler: '+(e.detail||'Unbekannt'))}
 }
 
 async function deleteGroup(name){
   if(!confirm(`Gruppe "${name}" wirklich löschen? Skripte bleiben erhalten, verlieren nur ihre Gruppe.`))return;
   const r=await fetch(BASE+'/web/config/groups/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({group:name,script_ids:[]})});
-  if(r.ok){toast('Gruppe gelöscht');loadGroups();loadScripts()}
+  if(r.ok){toast('Gruppe gelöscht');loadGroups();loadGroupOptions();loadScripts()}
 }
 
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
