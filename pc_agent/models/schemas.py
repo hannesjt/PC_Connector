@@ -89,3 +89,28 @@ class AssignGroupRequest(BaseModel):
     group: str
     script_ids: list[str]
     old_group: str | None = None
+
+
+# --- Input control (mouse & keyboard) ---
+
+class MouseMoveRequest(BaseModel):
+    dx: float
+    dy: float
+
+
+class MouseClickRequest(BaseModel):
+    button: str = "left"   # "left", "right", "middle"
+    double: bool = False
+
+
+class MouseScrollRequest(BaseModel):
+    dx: float = 0.0
+    dy: float = 0.0
+
+
+class KeyboardTypeRequest(BaseModel):
+    text: str
+
+
+class KeyboardKeyRequest(BaseModel):
+    key: str   # e.g. "enter", "backspace", "tab", "escape", "up", "down", "left", "right", "win"

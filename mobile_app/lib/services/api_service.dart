@@ -250,4 +250,56 @@ class ApiService {
       throw Exception('Failed to assign group: ${response.statusCode}');
     }
   }
+
+  // --- Input control (mouse & keyboard) ---
+
+  Future<void> mouseMoveRel(double dx, double dy) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/input/mouse/move'),
+          headers: _headers,
+          body: jsonEncode({'dx': dx, 'dy': dy}),
+        )
+        .timeout(const Duration(seconds: 2));
+  }
+
+  Future<void> mouseClick({String button = 'left', bool double_ = false}) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/input/mouse/click'),
+          headers: _headers,
+          body: jsonEncode({'button': button, 'double': double_}),
+        )
+        .timeout(const Duration(seconds: 2));
+  }
+
+  Future<void> mouseScroll({double dx = 0, double dy = 0}) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/input/mouse/scroll'),
+          headers: _headers,
+          body: jsonEncode({'dx': dx, 'dy': dy}),
+        )
+        .timeout(const Duration(seconds: 2));
+  }
+
+  Future<void> keyboardType(String text) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/input/keyboard/type'),
+          headers: _headers,
+          body: jsonEncode({'text': text}),
+        )
+        .timeout(const Duration(seconds: 5));
+  }
+
+  Future<void> keyboardKey(String key) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/input/keyboard/key'),
+          headers: _headers,
+          body: jsonEncode({'key': key}),
+        )
+        .timeout(const Duration(seconds: 2));
+  }
 }

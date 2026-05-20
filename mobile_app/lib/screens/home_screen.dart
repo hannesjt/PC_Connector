@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import '../services/wol_service.dart';
 import '../widgets/status_indicator.dart';
 import '../widgets/script_button.dart';
+import 'input_control_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final PcProfile profile;
@@ -594,7 +595,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+
+            // Input control button (only when online)
+            if (_isOnline) ...[
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => InputControlScreen(api: _api),
+                  ),
+                ),
+                icon: const Icon(Icons.mouse),
+                label: const Text('Maus & Tastatur'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            const SizedBox(height: 16),
 
             // Script/Chain/Category section header
             if (_isOnline) ...[

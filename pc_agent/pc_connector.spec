@@ -48,6 +48,12 @@ a = Analysis(
         # pystray (system tray)
         'pystray._win32',
         'PIL._tkinter_finder',
+        # pyautogui (mouse & keyboard control)
+        'pyautogui',
+        'pynput',
+        'pynput.mouse',
+        'pynput.keyboard',
+        'mouseinfo',
     ],
     hookspath=[],
     hooksconfig={},
