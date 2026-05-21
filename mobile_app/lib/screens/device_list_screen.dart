@@ -312,10 +312,10 @@ class _GitHubBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: () async {
-        final uri = Uri.parse(_repoUrl);
-        if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
-      },
+      onTap: () => launchUrl(
+        Uri.parse(_repoUrl),
+        mode: LaunchMode.externalApplication,
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
