@@ -53,6 +53,11 @@ def verify_pairing_code(code: str, device_name: str) -> str | None:
         return None
     token = secrets.token_urlsafe(32)
     _ensure_loaded()
+    # Remove any existing entry with the same device name to avoid duplicates
+    for existing_token, info in list(_paired_devices.items()):
+        if info.get("name") == device_name:
+            del _paired_devices[existing_token]
+            break
     _paired_devices[token] = {
         "name": device_name,
         "paired_at": time.time(),

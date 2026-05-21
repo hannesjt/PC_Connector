@@ -1,14 +1,23 @@
 import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import '../main.dart';
 import '../models/pc_profile.dart';
 import '../models/script_config.dart';
 import '../services/api_service.dart';
+import '../services/pin_lock_service.dart';
 import '../services/storage_service.dart';
+import '../services/purchase_service.dart';
 import '../services/wol_service.dart';
 import '../widgets/status_indicator.dart';
 import '../widgets/script_button.dart';
+import 'clipboard_sheet.dart';
+import 'file_explorer_screen.dart';
+import 'history_screen.dart';
 import 'input_control_screen.dart';
+import 'paywall_sheet.dart';
+import 'screen_view_screen.dart';
+import 'volume_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   final PcProfile profile;
@@ -36,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Script scope filter: false = dieses System, true = alle Systeme
   bool _showGlobalScripts = false;
+
+  bool get _isPro => PurchaseService.instance.isPro;
 
   // Offline re-pairing
   final _offlinePairCodeCtrl = TextEditingController();
@@ -360,8 +371,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  List<ScriptConfig> get _filteredScripts =>
-      _scripts.where((s) => s.isGlobal == _showGlobalScripts).toList();
+  List<ScriptConfig> get _filteredScripts {
+    final all = _scripts.where((s) => s.isGlobal == _showGlobalScripts).toList();
+    // Free tier: show max 3 scripts but keep all for display so user sees what's locked
+    return all;
+  }
+
+  /// Returns true when the script at [index] in the filtered list is accessible.
+  bool _scriptAccessible(int index) => _isPro || index < kFreeMaxScripts;
 
   Future<void> _pairFromHomeScreen() async {
     final code = _offlinePairCodeCtrl.text.trim();
@@ -429,6 +446,161 @@ class _HomeScreenState extends State<HomeScreen> {
     return known + rest;
   }
 
+  void _showSettingsSheet() {
+    final appState = PcConnectorApp.of(context);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final isDark = appState?.themeMode == ThemeMode.dark;
+          final pinEnabled = PinLockService.instance.enabled;
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Einstellungen',
+                    style: Theme.of(ctx).textTheme.titleLarge),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Dark Mode'),
+                  secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+                  value: isDark,
+                  onChanged: (val) {
+                    final mode = val ? ThemeMode.dark : ThemeMode.light;
+                    appState?.setThemeMode(mode);
+                    setSheetState(() {});
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('PIN-Sperre'),
+                  secondary: const Icon(Icons.lock_outline),
+                  subtitle: Text(pinEnabled ? 'Aktiv' : 'Inaktiv'),
+                  value: pinEnabled,
+                  onChanged: (val) async {
+                    if (val && !_isPro) {
+                      Navigator.pop(ctx);
+                      showPaywallSheet(context,
+                          reason: 'PIN-Sperre ist ein Pro-Feature.');
+                      return;
+                    }
+                    if (val) {
+                      Navigator.pop(ctx);
+                      _showSetPinDialog();
+                    } else {
+                      await PinLockService.instance.removePin();
+                      setSheetState(() {});
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showSetPinDialog() {
+    final pinCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('PIN festlegen'),
+        content: TextField(
+          controller: pinCtrl,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: '4-stellige PIN',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final pin = pinCtrl.text.trim();
+              if (pin.length != 4) return;
+              await PinLockService.instance.setPin(pin);
+              if (!mounted) return;
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('PIN wurde gesetzt')),
+              );
+            },
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sortButton(VoidCallback onTap) {
+    return Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.sort),
+          onPressed: onTap,
+          tooltip: 'Reihenfolge ändern',
+        ),
+        if (!_isPro)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Icon(Icons.lock, size: 12,
+                color: Theme.of(context).colorScheme.outline),
+          ),
+      ],
+    );
+  }
+
+  Widget _proButton({
+    required bool isPro,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required String reason,
+  }) {
+    return Stack(
+      children: [
+        OutlinedButton.icon(
+          onPressed: isPro
+              ? onTap
+              : () => showPaywallSheet(context, reason: reason),
+          icon: Icon(icon, size: 18),
+          label: Text(label),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 40),
+          ),
+        ),
+        if (!isPro)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Icon(Icons.lock, size: 14,
+                color: Theme.of(context).colorScheme.outline),
+          ),
+      ],
+    );
+  }
+
   Widget _buildScopeToggle(BuildContext context) {
     return Row(
       children: [
@@ -447,10 +619,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
             selected: {_showGlobalScripts},
-            onSelectionChanged: (val) => setState(() {
-              _showGlobalScripts = val.first;
-              _reorderMode = false;
-            }),
+            onSelectionChanged: (val) {
+              if (val.first == true && !_isPro) {
+                showPaywallSheet(context,
+                    reason: 'Globale Skripte sind ein Pro-Feature.');
+                return;
+              }
+              setState(() {
+                _showGlobalScripts = val.first;
+                _reorderMode = false;
+              });
+            },
           ),
         ),
       ],
@@ -476,22 +655,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: _saveScriptOrder,
                     child: const Text('Fertig'),
                   )
-                : IconButton(
-                    icon: const Icon(Icons.sort),
-                    onPressed: () => setState(() => _reorderMode = true),
-                    tooltip: 'Reihenfolge ändern',
-                  ),
+                : _sortButton(() {
+                    if (!_isPro) {
+                      showPaywallSheet(context,
+                          reason: 'Reihenfolge anpassen ist ein Pro-Feature.');
+                      return;
+                    }
+                    setState(() => _reorderMode = true);
+                  }),
           if (_isOnline && _activeSection == 1 && _chains.isNotEmpty)
             _reorderMode
                 ? TextButton(
                     onPressed: _saveChainOrder,
                     child: const Text('Fertig'),
                   )
-                : IconButton(
-                    icon: const Icon(Icons.sort),
-                    onPressed: () => setState(() => _reorderMode = true),
-                    tooltip: 'Reihenfolge ändern',
-                  ),
+                : _sortButton(() {
+                    if (!_isPro) {
+                      showPaywallSheet(context,
+                          reason: 'Reihenfolge anpassen ist ein Pro-Feature.');
+                      return;
+                    }
+                    setState(() => _reorderMode = true);
+                  }),
           if (_isOnline && _activeSection == 2) ...[
             if (_reorderMode && _categoryOrder.isNotEmpty)
               TextButton(
@@ -520,6 +705,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (_isOnline) await _loadScripts();
               },
               tooltip: 'Status aktualisieren',
+            ),
+          if (!_isPro)
+            IconButton(
+              icon: const Icon(Icons.workspace_premium),
+              onPressed: () => showPaywallSheet(context,
+                  reason: 'Upgrade auf Pro und schalte alle Features frei.'),
+              tooltip: 'Pro kaufen',
             ),
         ],
       ),
@@ -613,6 +805,76 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+              // Feature buttons row
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showVolumeSheet(context, _api),
+                      icon: const Icon(Icons.volume_up, size: 18),
+                      label: const Text('Lautstärke'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => showClipboardSheet(context, _api),
+                      icon: const Icon(Icons.content_paste, size: 18),
+                      label: const Text('Clipboard'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _proButton(
+                      isPro: _isPro,
+                      icon: Icons.screenshot_monitor,
+                      label: 'Bildschirm',
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => ScreenViewScreen(api: _api))),
+                      reason: 'Bildschirmübertragung ist ein Pro-Feature.',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _proButton(
+                      isPro: _isPro,
+                      icon: Icons.folder_open,
+                      label: 'Dateien',
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => FileExplorerScreen(api: _api))),
+                      reason: 'Datei-Explorer ist ein Pro-Feature.',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _proButton(
+                      isPro: _isPro,
+                      icon: Icons.history,
+                      label: 'Verlauf',
+                      onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => HistoryScreen(api: _api))),
+                      reason: 'Skript-Verlauf ist ein Pro-Feature.',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _showSettingsSheet,
+                      icon: const Icon(Icons.settings, size: 18),
+                      label: const Text('Einstellungen'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
             ],
 
             const SizedBox(height: 16),
@@ -629,11 +891,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ])
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => setState(() {
-                          _activeSection = entry.$1;
-                          _reorderMode = false;
-                          _selectedCategory = null;
-                        }),
+                        onTap: () {
+                          // Abläufe (1) und Kategorien (2) sind Pro-Features
+                          if (entry.$1 != 0 && !_isPro) {
+                            showPaywallSheet(context,
+                                reason: '${entry.$2} sind ein Pro-Feature.');
+                            return;
+                          }
+                          setState(() {
+                            _activeSection = entry.$1;
+                            _reorderMode = false;
+                            _selectedCategory = null;
+                          });
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           alignment: Alignment.center,
@@ -703,16 +973,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.6,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.8,
                 ),
                 itemCount: filtered.length,
                 itemBuilder: (context, index) {
                   final script = filtered[index];
-                  return ScriptButton(
-                    script: script,
-                    onPressed: () => _runScript(script),
+                  final accessible = _scriptAccessible(index);
+                  return Stack(
+                    children: [
+                      ScriptButton(
+                        script: script,
+                        onPressed: accessible
+                            ? () => _runScript(script)
+                            : () => showPaywallSheet(context,
+                                reason:
+                                    'Mit Pro kannst du unbegrenzt viele Skripte nutzen (Gratis: 3).'),
+                      ),
+                      if (!accessible)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.lock, color: Colors.white70, size: 28),
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),

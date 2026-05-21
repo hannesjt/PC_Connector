@@ -151,8 +151,13 @@ class _SetupScreenState extends State<SetupScreen> {
               deviceToken: result.token,
             );
 
-            await storage.addProfile(profile);
+            final dupError = await storage.addProfile(profile);
             if (!mounted) return;
+            if (dupError != null) {
+              _showError(dupError);
+              setState(() { _pairing = false; _statusText = ''; });
+              return;
+            }
             Navigator.of(context).pop(true);
             return;
           }

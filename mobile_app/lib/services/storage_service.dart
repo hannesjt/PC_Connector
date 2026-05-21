@@ -29,10 +29,17 @@ class StorageService {
     await prefs.setString(_profilesKey, json);
   }
 
-  Future<void> addProfile(PcProfile profile) async {
+  Future<String?> addProfile(PcProfile profile) async {
     final profiles = await loadProfiles();
+    // Check for duplicate IP+port
+    final duplicate = profiles.where((p) =>
+        p.ipAddress == profile.ipAddress && p.port == profile.port).toList();
+    if (duplicate.isNotEmpty) {
+      return 'Ein PC mit der Adresse ${profile.ipAddress}:${profile.port} ist bereits vorhanden (${duplicate.first.name}).';
+    }
     profiles.add(profile);
     await saveProfiles(profiles);
+    return null; // no error
   }
 
   Future<void> updateProfile(PcProfile profile) async {

@@ -10,6 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from routers import pairing, scripts, status, web
 from routers import input as input_router
+from routers import volume, clipboard, files, screen, history
 from services.auth_service import is_valid_token
 from services.config_loader import load_config
 from services.discovery_service import start_discovery_listener
@@ -96,6 +97,11 @@ def verify_token(
 app.include_router(status.router, dependencies=[Depends(verify_token)])
 app.include_router(scripts.router, dependencies=[Depends(verify_token)])
 app.include_router(input_router.router, dependencies=[Depends(verify_token)])
+app.include_router(volume.router, dependencies=[Depends(verify_token)])
+app.include_router(clipboard.router, dependencies=[Depends(verify_token)])
+app.include_router(files.router, dependencies=[Depends(verify_token)])
+app.include_router(screen.router, dependencies=[Depends(verify_token)])
+app.include_router(history.router, dependencies=[Depends(verify_token)])
 
 # Unprotected routes (pairing + web UI)
 app.include_router(pairing.router)

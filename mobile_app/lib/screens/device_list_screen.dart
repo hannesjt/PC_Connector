@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/pc_profile.dart';
 import '../services/api_service.dart';
+import '../services/purchase_service.dart';
 import '../services/storage_service.dart';
 import 'home_screen.dart';
+import 'paywall_sheet.dart';
 import 'setup_screen.dart';
 
 class DeviceListScreen extends StatefulWidget {
@@ -61,6 +64,12 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
   }
 
   void _addDevice() async {
+    final isPro = PurchaseService.instance.isPro;
+    if (!isPro && _profiles.length >= kFreeMaxProfiles) {
+      showPaywallSheet(context,
+          reason: 'Mit Pro kannst du mehrere PCs verwalten (Gratis: 1 PC).');
+      return;
+    }
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const SetupScreen()),
     );
@@ -132,6 +141,13 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
             },
             tooltip: 'Status aktualisieren',
           ),
+          if (!PurchaseService.instance.isPro)
+            IconButton(
+              icon: const Icon(Icons.workspace_premium),
+              onPressed: () => showPaywallSheet(context,
+                  reason: 'Upgrade auf Pro und schalte alle Features frei.'),
+              tooltip: 'Pro kaufen',
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -141,44 +157,51 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _profiles.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.devices, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text('Keine Geräte konfiguriert.'),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: _addDevice,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Gerät hinzufügen'),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadProfiles,
-                  child: ReorderableListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                    itemCount: _profiles.length,
-                    onReorder: _onReorder,
-                    itemBuilder: (context, index) {
-                      final profile = _profiles[index];
-                      final isOnline = _onlineStatus[profile.id];
-                      return _DeviceCard(
-                        key: ValueKey(profile.id),
-                        profile: profile,
-                        isOnline: isOnline,
-                        lastSeenText: _formatLastSeen(profile.lastSeen),
-                        onTap: () => _openDevice(profile),
-                        onEdit: () => _editDevice(profile),
-                        onDelete: () => _deleteDevice(profile),
-                      );
-                    },
-                  ),
+          : Column(
+              children: [
+                _GitHubBanner(),
+                Expanded(
+                  child: _profiles.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.devices, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
+                              const Text('Keine Geräte konfiguriert.'),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: _addDevice,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Gerät hinzufügen'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadProfiles,
+                          child: ReorderableListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                            itemCount: _profiles.length,
+                            onReorder: _onReorder,
+                            itemBuilder: (context, index) {
+                              final profile = _profiles[index];
+                              final isOnline = _onlineStatus[profile.id];
+                              return _DeviceCard(
+                                key: ValueKey(profile.id),
+                                profile: profile,
+                                isOnline: isOnline,
+                                lastSeenText: _formatLastSeen(profile.lastSeen),
+                                onTap: () => _openDevice(profile),
+                                onEdit: () => _editDevice(profile),
+                                onDelete: () => _deleteDevice(profile),
+                              );
+                            },
+                          ),
+                        ),
                 ),
+              ],
+            ),
     );
   }
 }
@@ -275,6 +298,43 @@ class _DeviceCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GitHubBanner extends StatelessWidget {
+  static const _repoUrl =
+      'https://github.com/hannesjt/PC_Connector/releases/latest';
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.parse(_repoUrl);
+        if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        color: cs.surfaceContainerHighest,
+        child: Row(
+          children: [
+            Icon(Icons.computer, size: 18, color: cs.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'PC-Agent herunterladen  →  github.com/hannesjt/PC_Connector',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: cs.primary,
+                    ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.open_in_new, size: 14, color: cs.outline),
+          ],
         ),
       ),
     );

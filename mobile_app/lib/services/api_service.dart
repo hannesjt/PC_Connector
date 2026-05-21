@@ -302,4 +302,114 @@ class ApiService {
         )
         .timeout(const Duration(seconds: 2));
   }
+
+  // --- Volume ---
+
+  Future<Map<String, dynamic>> getVolume() async {
+    final response = await http
+        .get(Uri.parse('${profile.baseUrl}/api/volume/'), headers: _headers)
+        .timeout(const Duration(seconds: 3));
+    if (response.statusCode != 200) throw Exception('Failed to get volume');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> setVolume(double level) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/volume/set'),
+          headers: _headers,
+          body: jsonEncode({'level': level}),
+        )
+        .timeout(const Duration(seconds: 2));
+  }
+
+  Future<void> setMute(bool muted) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/volume/mute'),
+          headers: _headers,
+          body: jsonEncode({'muted': muted}),
+        )
+        .timeout(const Duration(seconds: 2));
+  }
+
+  // --- Clipboard ---
+
+  Future<String> getClipboard() async {
+    final response = await http
+        .get(Uri.parse('${profile.baseUrl}/api/clipboard/'), headers: _headers)
+        .timeout(const Duration(seconds: 3));
+    if (response.statusCode != 200) return '';
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['text'] as String? ?? '';
+  }
+
+  Future<void> setClipboard(String text) async {
+    await http
+        .post(
+          Uri.parse('${profile.baseUrl}/api/clipboard/set'),
+          headers: _headers,
+          body: jsonEncode({'text': text}),
+        )
+        .timeout(const Duration(seconds: 3));
+  }
+
+  // --- Files ---
+
+  Future<List<Map<String, dynamic>>> listFiles(String path) async {
+    final uri = Uri.parse('${profile.baseUrl}/api/files/list')
+        .replace(queryParameters: {'path': path});
+    final response = await http
+        .get(uri, headers: _headers)
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) throw Exception('Failed to list files');
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
+
+  String fileDownloadUrl(String path) {
+    final uri = Uri.parse('${profile.baseUrl}/api/files/download')
+        .replace(queryParameters: {'path': path});
+    return uri.toString();
+  }
+
+  Future<void> uploadFile(String destDir, String filename, List<int> bytes) async {
+    final uri = Uri.parse('${profile.baseUrl}/api/files/upload')
+        .replace(queryParameters: {'dest': destDir});
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll(_headers);
+    request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final response = await request.send().timeout(const Duration(seconds: 120));
+    if (response.statusCode != 200) throw Exception('Upload failed');
+  }
+
+  Future<void> openFileOnPc(String path) async {
+    final uri = Uri.parse('${profile.baseUrl}/api/files/open')
+        .replace(queryParameters: {'path': path});
+    await http.post(uri, headers: _headers).timeout(const Duration(seconds: 5));
+  }
+
+  // --- Screen ---
+
+  String screenshotUrl({int quality = 50, double scale = 0.5}) {
+    return '${profile.baseUrl}/api/screen/screenshot?quality=$quality&scale=$scale';
+  }
+
+  // --- History ---
+
+  Future<List<Map<String, dynamic>>> getHistory({int limit = 50}) async {
+    final response = await http
+        .get(
+          Uri.parse('${profile.baseUrl}/api/history/?limit=$limit'),
+          headers: _headers,
+        )
+        .timeout(const Duration(seconds: 5));
+    if (response.statusCode != 200) return [];
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> clearHistory() async {
+    await http
+        .delete(Uri.parse('${profile.baseUrl}/api/history/'), headers: _headers)
+        .timeout(const Duration(seconds: 5));
+  }
 }

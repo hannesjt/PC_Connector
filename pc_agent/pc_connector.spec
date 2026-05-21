@@ -4,18 +4,21 @@
 
 import sys
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
+
+_mp_datas, _mp_binaries, _mp_hidden = collect_all('multipart')
 
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=[],
+    binaries=[] + _mp_binaries,
     datas=[
         ('templates', 'templates'),
         ('config.yaml.example', '.'),
         ('../assets/icon/icon.png', '.'),
-    ],
+    ] + _mp_datas,
     hiddenimports=[
         # uvicorn internals
         'uvicorn.logging',
@@ -54,7 +57,20 @@ a = Analysis(
         'pynput.mouse',
         'pynput.keyboard',
         'mouseinfo',
-    ],
+        # file upload support
+        'multipart',
+        'multipart.multipart',
+        # volume control
+        'pycaw',
+        'pycaw.pycaw',
+        'comtypes',
+        'comtypes.client',
+        'comtypes.server',
+        'comtypes.persist',
+        # clipboard
+        'pyperclip',
+        'pyperclip.clipboard',
+    ] + _mp_hidden,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

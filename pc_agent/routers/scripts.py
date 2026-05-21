@@ -10,6 +10,21 @@ from services.script_runner import run_script
 router = APIRouter(prefix="/api", tags=["scripts"])
 
 
+def _log_result(script_name: str, result):
+    """Log script execution to history (best-effort)."""
+    try:
+        from routers.history import add_history_entry  # noqa: PLC0415
+        add_history_entry(
+            script_id=result.script_id,
+            script_name=script_name,
+            success=result.success,
+            exit_code=result.exit_code,
+            stderr=result.stderr,
+        )
+    except Exception:
+        pass
+
+
 @router.get("/scripts", response_model=list[ScriptListItem])
 async def list_scripts():
     config = get_config()
@@ -61,7 +76,9 @@ async def run_script_endpoint(script_id: str):
     script = next((s for s in config.scripts if s.id == script_id), None)
     if script is None:
         raise HTTPException(status_code=404, detail=f"Script '{script_id}' not found")
-    return await run_script(script)
+    result = await run_script(script)
+    _log_result(script.name, result)
+    return result
 
 
 @router.get("/chains", response_model=list[ScriptChain])
