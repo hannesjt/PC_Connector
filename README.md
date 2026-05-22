@@ -37,16 +37,32 @@ Ein kleiner Server (`PC_Connector_Agent.exe`) läuft auf dem PC im Hintergrund. 
 
 ## Features
 
+### Kostenlos
+
 | Feature | Beschreibung |
 |---|---|
 | ⚡ **Wake-on-LAN** | PC aus dem Schlaf aufwecken, auch wenn er ausgeschaltet ist |
-| ▶ **Skripte ausführen** | Beliebige Windows-Befehle per Knopfdruck starten |
-| 🔗 **Abläufe** | Mehrere Skripte nacheinander ausführen, optional mit Verzögerung |
-| 📁 **Gruppen** | Skripte in Kategorien organisieren und sortieren |
-| 🌐 **Weboberfläche** | Vollständige Konfiguration im Browser, kein App-Update nötig |
-| 🔒 **Sicheres Pairing** | Einmaliger 6-stelliger Code – kein Passwort im Klartext |
 | 📡 **Automatische Erkennung** | App findet den PC automatisch im lokalen Netzwerk (UDP-Broadcast) |
-| 🖱️ **Drag & Drop** | Reihenfolge von Skripten, Abläufen und Gruppen per Drag & Drop ändern |
+| 🔒 **Sicheres Pairing** | Einmaliger Code – kein Passwort im Klartext |
+| ▶ **Skripte ausführen** | Bis zu 3 Windows-Befehle per Knopfdruck starten |
+| 🖱️ **Maus & Tastatur** | PC-Maus und Tastatur vom Handy aus fernsteuern |
+| 🔊 **Lautstärke-Regler** | Schieberegler für PC-Lautstärke direkt aus der App |
+| 📋 **Zwischenablage senden** | Text vom Handy in die PC-Zwischenablage übertragen |
+| 🌐 **Weboberfläche** | Vollständige Konfiguration im Browser, kein App-Update nötig |
+| 🌙 **Dark/Light Mode** | App-Theme frei wählbar |
+
+### Pro (3 €/Monat)
+
+| Feature | Beschreibung |
+|---|---|
+| ∞ **Unbegrenzte Skripte** | Mehr als 3 Skripte anlegen und ausführen |
+| 🔗 **Abläufe / Script-Chains** | Mehrschrittige Automatisierungen mit Verzögerungen |
+| 📁 **Gruppen & Kategorien** | Skripte organisieren und per Drag & Drop sortieren |
+| 🖥️ **Mehrere PC-Profile** | Mehrere PCs in der App verwalten |
+| 🖼️ **Bildschirmübertragung** | PC-Bildschirm live auf dem Handy anzeigen (readonly) |
+| 📂 **Datei-Explorer** | Dateistruktur des PCs durchsuchen, Dateien hoch- und herunterladen |
+| 📜 **Skript-Verlauf** | Log aller ausgeführten Skripte mit Ergebnis |
+| 🔐 **PIN-Sperre** | App per PIN absichern |
 
 ---
 
