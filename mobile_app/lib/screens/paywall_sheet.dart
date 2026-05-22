@@ -120,7 +120,7 @@ class _PaywallSheetState extends State<PaywallSheet> {
                     width: 22, height: 22,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('Pro freischalten – ~2 €/Monat'),
+                : const Text('Pro freischalten – 3 €/Monat'),
           ),
           const SizedBox(height: 8),
           TextButton(
