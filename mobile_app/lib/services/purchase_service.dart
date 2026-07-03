@@ -12,6 +12,9 @@ const kProProductId = 'pc_connector_pro_monthly';
 const kFreeMaxProfiles = 1;
 const kFreeMaxScripts = 3;
 
+/// Machine-readable purchase error causes. The UI maps these to localized text.
+enum PurchaseErrorCode { none, storeUnavailable, productNotFound }
+
 class PurchaseService extends ChangeNotifier {
   PurchaseService._();
   static final PurchaseService instance = PurchaseService._();
@@ -19,12 +22,14 @@ class PurchaseService extends ChangeNotifier {
   bool _isPro = false;
   bool _loading = true;
   String? _error;
+  PurchaseErrorCode _errorCode = PurchaseErrorCode.none;
 
   StreamSubscription<List<PurchaseDetails>>? _subscription;
 
   bool get isPro => _isPro;
   bool get loading => _loading;
   String? get error => _error;
+  PurchaseErrorCode get errorCode => _errorCode;
 
   // -------------------------------------------------------------------------
   // Init
@@ -64,18 +69,19 @@ class PurchaseService extends ChangeNotifier {
 
   Future<bool> buyPro() async {
     _error = null;
+    _errorCode = PurchaseErrorCode.none;
     final available = await InAppPurchase.instance.isAvailable();
     if (!available) {
-      _error = 'Google Play nicht verfügbar';
+      _errorCode = PurchaseErrorCode.storeUnavailable;
       notifyListeners();
       return false;
     }
 
-    final response = await InAppPurchase.instance
-        .queryProductDetails({kProProductId});
+    final response =
+        await InAppPurchase.instance.queryProductDetails({kProProductId});
 
     if (response.notFoundIDs.isNotEmpty || response.productDetails.isEmpty) {
-      _error = 'Produkt nicht gefunden. Bitte später erneut versuchen.';
+      _errorCode = PurchaseErrorCode.productNotFound;
       notifyListeners();
       return false;
     }

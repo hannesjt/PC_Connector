@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../models/script_config.dart';
 
 class ScriptResultScreen extends StatelessWidget {
@@ -13,6 +14,7 @@ class ScriptResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(scriptName)),
       body: ListView(
@@ -28,16 +30,15 @@ class ScriptResultScreen extends StatelessWidget {
                 result.success ? Icons.check_circle : Icons.error,
                 color: result.success ? Colors.green : Colors.red,
               ),
-              title: Text(result.success ? 'Erfolgreich' : 'Fehlgeschlagen'),
-              subtitle: Text('Exit-Code: ${result.exitCode}'),
+              title: Text(result.success ? l.successful : l.failed),
+              subtitle: Text(l.exitCodeLabel(result.exitCode)),
             ),
           ),
           const SizedBox(height: 16),
 
           // stdout
           if (result.stdout.isNotEmpty) ...[
-            Text('Ausgabe (stdout)',
-                style: Theme.of(context).textTheme.titleSmall),
+            Text(l.outputStdout, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -60,8 +61,7 @@ class ScriptResultScreen extends StatelessWidget {
 
           // stderr
           if (result.stderr.isNotEmpty) ...[
-            Text('Fehler (stderr)',
-                style: Theme.of(context).textTheme.titleSmall),
+            Text(l.errorStderr, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,

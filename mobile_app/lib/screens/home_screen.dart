@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../models/pc_profile.dart';
 import '../models/script_config.dart';
@@ -101,36 +102,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _sendWol() async {
+    final l = AppLocalizations.of(context);
     try {
       await _wol.sendWol(widget.profile.macAddress);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Wake-on-LAN Paket gesendet!')),
+        SnackBar(content: Text(l.wolSent)),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler: $e')),
+        SnackBar(content: Text(l.error(e))),
       );
     }
   }
 
   Future<void> _runScript(ScriptConfig script) async {
+    final l = AppLocalizations.of(context);
     if (script.confirm) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('${script.name} ausführen?'),
-          content:
-              const Text('Möchtest du dieses Skript wirklich ausführen?'),
+          title: Text(l.runScriptTitle(script.name)),
+          content: Text(l.runScriptConfirm),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Abbrechen'),
+              child: Text(l.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Ausführen'),
+              child: Text(l.run),
             ),
           ],
         ),
@@ -140,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${script.name} wird ausgeführt...')),
+      SnackBar(content: Text(l.scriptRunning(script.name))),
     );
 
     try {
@@ -150,23 +152,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${script.name} erfolgreich ausgeführt'),
+            content: Text(l.scriptSuccess(script.name)),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         final errorMsg = result.stderr.isNotEmpty
             ? result.stderr.trim().replaceAll('\r\n', ' ').replaceAll('\n', ' ')
-            : 'Exit-Code ${result.exitCode}';
+            : l.exitCode(result.exitCode);
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text('${script.name} fehlgeschlagen'),
+            title: Text(l.scriptFailed(script.name)),
             content: SingleChildScrollView(child: Text(errorMsg)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
+                child: Text(l.ok),
               ),
             ],
           ),
@@ -179,12 +181,12 @@ class _HomeScreenState extends State<HomeScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Verbindungsfehler'),
+          title: Text(l.connectionError),
           content: SingleChildScrollView(child: Text(msg)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+              child: Text(l.ok),
             ),
           ],
         ),
@@ -244,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showGroupDialog({String? existingGroup}) async {
+    final l = AppLocalizations.of(context);
     final nameController = TextEditingController(text: existingGroup ?? '');
     final selected = <String>{};
     if (existingGroup != null) {
@@ -256,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(existingGroup != null ? 'Gruppe bearbeiten' : 'Neue Gruppe'),
+          title: Text(existingGroup != null ? l.editGroup : l.newGroup),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -265,28 +268,35 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Gruppenname'),
+                  decoration: InputDecoration(labelText: l.groupName),
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: 12),
-                const Text('Skripte:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(l.scriptsLabel,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Flexible(
                   child: SingleChildScrollView(
                     child: Column(
-                      children: _scripts.map((s) => CheckboxListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(s.name),
-                        subtitle: s.group.isNotEmpty && s.group != existingGroup
-                            ? Text('Gruppe: ${s.group}', style: const TextStyle(fontSize: 11))
-                            : null,
-                        value: selected.contains(s.id),
-                        onChanged: (v) => setDialogState(() {
-                          if (v == true) selected.add(s.id);
-                          else selected.remove(s.id);
-                        }),
-                      )).toList(),
+                      children: _scripts
+                          .map((s) => CheckboxListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(s.name),
+                                subtitle: s.group.isNotEmpty &&
+                                        s.group != existingGroup
+                                    ? Text(l.groupPrefix(s.group),
+                                        style: const TextStyle(fontSize: 11))
+                                    : null,
+                                value: selected.contains(s.id),
+                                onChanged: (v) => setDialogState(() {
+                                  if (v == true)
+                                    selected.add(s.id);
+                                  else
+                                    selected.remove(s.id);
+                                }),
+                              ))
+                          .toList(),
                     ),
                   ),
                 ),
@@ -296,11 +306,11 @@ class _HomeScreenState extends State<HomeScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Abbrechen'),
+              child: Text(l.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Speichern'),
+              child: Text(l.save),
             ),
           ],
         ),
@@ -320,15 +330,16 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler: $e')),
+        SnackBar(content: Text(l.error(e))),
       );
     }
   }
 
   Future<void> _runChain(ScriptChain chain) async {
+    final l = AppLocalizations.of(context);
     setState(() => _runningChains[chain.id] = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${chain.name} wird ausgeführt...')),
+      SnackBar(content: Text(l.scriptRunning(chain.name))),
     );
     try {
       final result = await _api.runChain(chain.id);
@@ -339,14 +350,14 @@ class _HomeScreenState extends State<HomeScreen> {
       if (failed == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${chain.name} abgeschlossen'),
+            content: Text(l.chainDone(chain.name)),
             backgroundColor: Colors.green,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${chain.name}: $failed Schritt(e) fehlgeschlagen'),
+            content: Text(l.chainFailedSteps(chain.name, failed)),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 5),
           ),
@@ -359,10 +370,10 @@ class _HomeScreenState extends State<HomeScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Fehler'),
+          title: Text(l.errorTitle),
           content: Text(msg),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.ok)),
           ],
         ),
       );
@@ -372,7 +383,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<ScriptConfig> get _filteredScripts {
-    final all = _scripts.where((s) => s.isGlobal == _showGlobalScripts).toList();
+    final all =
+        _scripts.where((s) => s.isGlobal == _showGlobalScripts).toList();
     // Free tier: show max 3 scripts but keep all for display so user sees what's locked
     return all;
   }
@@ -381,6 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _scriptAccessible(int index) => _isPro || index < kFreeMaxScripts;
 
   Future<void> _pairFromHomeScreen() async {
+    final l = AppLocalizations.of(context);
     final code = _offlinePairCodeCtrl.text.trim();
     if (code.isEmpty) return;
     setState(() => _offlinePairing = true);
@@ -398,8 +411,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       if (result == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kopplungscode ungültig oder abgelaufen'),
+          SnackBar(
+            content: Text(l.pairCodeInvalidExpired),
             backgroundColor: Colors.red,
           ),
         );
@@ -413,8 +426,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _offlinePairCodeCtrl.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erfolgreich gekoppelt!'),
+        SnackBar(
+          content: Text(l.pairedSuccess),
           backgroundColor: Colors.green,
         ),
       );
@@ -422,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Verbindung fehlgeschlagen: $e')),
+        SnackBar(content: Text(l.connectionFailed(e))),
       );
     } finally {
       if (mounted) setState(() => _offlinePairing = false);
@@ -447,6 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSettingsSheet() {
+    final l = AppLocalizations.of(context);
     final appState = PcConnectorApp.of(context);
     showModalBottomSheet(
       context: context,
@@ -463,18 +477,18 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Theme.of(ctx).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('Einstellungen',
-                    style: Theme.of(ctx).textTheme.titleLarge),
+                Text(l.settings, style: Theme.of(ctx).textTheme.titleLarge),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: const Text('Dark Mode'),
+                  title: Text(l.darkMode),
                   secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
                   value: isDark,
                   onChanged: (val) {
@@ -483,16 +497,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     setSheetState(() {});
                   },
                 ),
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(l.language),
+                  trailing: DropdownButton<String>(
+                    value: appState?.locale?.languageCode ?? 'system',
+                    underline: const SizedBox.shrink(),
+                    onChanged: (val) {
+                      final locale = val == 'system' ? null : Locale(val!);
+                      appState?.setLocale(locale);
+                      setSheetState(() {});
+                    },
+                    items: [
+                      DropdownMenuItem(
+                          value: 'system', child: Text(l.languageSystem)),
+                      const DropdownMenuItem(
+                          value: 'de', child: Text('Deutsch')),
+                      const DropdownMenuItem(
+                          value: 'en', child: Text('English')),
+                    ],
+                  ),
+                ),
                 SwitchListTile(
-                  title: const Text('PIN-Sperre'),
+                  title: Text(l.pinLock),
                   secondary: const Icon(Icons.lock_outline),
-                  subtitle: Text(pinEnabled ? 'Aktiv' : 'Inaktiv'),
+                  subtitle: Text(pinEnabled ? l.active : l.inactive),
                   value: pinEnabled,
                   onChanged: (val) async {
                     if (val && !_isPro) {
                       Navigator.pop(ctx);
-                      showPaywallSheet(context,
-                          reason: 'PIN-Sperre ist ein Pro-Feature.');
+                      showPaywallSheet(context, reason: l.pinLockProReason);
                       return;
                     }
                     if (val) {
@@ -514,25 +548,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSetPinDialog() {
+    final l = AppLocalizations.of(context);
     final pinCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('PIN festlegen'),
+        title: Text(l.setPin),
         content: TextField(
           controller: pinCtrl,
           keyboardType: TextInputType.number,
           maxLength: 4,
           obscureText: true,
-          decoration: const InputDecoration(
-            labelText: '4-stellige PIN',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l.pinDigits,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Abbrechen'),
+            child: Text(l.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -542,10 +577,10 @@ class _HomeScreenState extends State<HomeScreen> {
               if (!mounted) return;
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PIN wurde gesetzt')),
+                SnackBar(content: Text(l.pinSet)),
               );
             },
-            child: const Text('Speichern'),
+            child: Text(l.save),
           ),
         ],
       ),
@@ -558,14 +593,14 @@ class _HomeScreenState extends State<HomeScreen> {
         IconButton(
           icon: const Icon(Icons.sort),
           onPressed: onTap,
-          tooltip: 'Reihenfolge ändern',
+          tooltip: AppLocalizations.of(context).changeOrder,
         ),
         if (!_isPro)
           Positioned(
             right: 4,
             top: 4,
-            child: Icon(Icons.lock, size: 12,
-                color: Theme.of(context).colorScheme.outline),
+            child: Icon(Icons.lock,
+                size: 12, color: Theme.of(context).colorScheme.outline),
           ),
       ],
     );
@@ -581,9 +616,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       children: [
         OutlinedButton.icon(
-          onPressed: isPro
-              ? onTap
-              : () => showPaywallSheet(context, reason: reason),
+          onPressed:
+              isPro ? onTap : () => showPaywallSheet(context, reason: reason),
           icon: Icon(icon, size: 18),
           label: Text(label),
           style: OutlinedButton.styleFrom(
@@ -594,35 +628,35 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             right: 4,
             top: 4,
-            child: Icon(Icons.lock, size: 14,
-                color: Theme.of(context).colorScheme.outline),
+            child: Icon(Icons.lock,
+                size: 14, color: Theme.of(context).colorScheme.outline),
           ),
       ],
     );
   }
 
   Widget _buildScopeToggle(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
           child: SegmentedButton<bool>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: false,
-                label: Text('Dieses System'),
-                icon: Icon(Icons.computer),
+                label: Text(l.thisSystem),
+                icon: const Icon(Icons.computer),
               ),
               ButtonSegment(
                 value: true,
-                label: Text('Alle Systeme'),
-                icon: Icon(Icons.public),
+                label: Text(l.allSystems),
+                icon: const Icon(Icons.public),
               ),
             ],
             selected: {_showGlobalScripts},
             onSelectionChanged: (val) {
               if (val.first == true && !_isPro) {
-                showPaywallSheet(context,
-                    reason: 'Globale Skripte sind ein Pro-Feature.');
+                showPaywallSheet(context, reason: l.globalScriptsProReason);
                 return;
               }
               setState(() {
@@ -638,6 +672,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final filtered = _filteredScripts;
     final grouped = <String, List<ScriptConfig>>{};
     for (final s in filtered) {
@@ -653,12 +688,11 @@ class _HomeScreenState extends State<HomeScreen> {
             _reorderMode
                 ? TextButton(
                     onPressed: _saveScriptOrder,
-                    child: const Text('Fertig'),
+                    child: Text(l.done),
                   )
                 : _sortButton(() {
                     if (!_isPro) {
-                      showPaywallSheet(context,
-                          reason: 'Reihenfolge anpassen ist ein Pro-Feature.');
+                      showPaywallSheet(context, reason: l.reorderProReason);
                       return;
                     }
                     setState(() => _reorderMode = true);
@@ -667,12 +701,11 @@ class _HomeScreenState extends State<HomeScreen> {
             _reorderMode
                 ? TextButton(
                     onPressed: _saveChainOrder,
-                    child: const Text('Fertig'),
+                    child: Text(l.done),
                   )
                 : _sortButton(() {
                     if (!_isPro) {
-                      showPaywallSheet(context,
-                          reason: 'Reihenfolge anpassen ist ein Pro-Feature.');
+                      showPaywallSheet(context, reason: l.reorderProReason);
                       return;
                     }
                     setState(() => _reorderMode = true);
@@ -681,37 +714,39 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_reorderMode && _categoryOrder.isNotEmpty)
               TextButton(
                 onPressed: _saveCategoryOrder,
-                child: const Text('Fertig'),
+                child: Text(l.done),
               )
             else
               IconButton(
                 icon: const Icon(Icons.create_new_folder_outlined),
                 onPressed: () => _showGroupDialog(),
-                tooltip: 'Neue Gruppe',
+                tooltip: l.newGroup,
               ),
             if (!_reorderMode && _categoryOrder.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.sort),
                 onPressed: () => setState(() => _reorderMode = true),
-                tooltip: 'Reihenfolge ändern',
+                tooltip: l.changeOrder,
               ),
           ],
           if (!_reorderMode)
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: _checking ? null : () async {
-                setState(() => _checking = true);
-                await _checkStatus();
-                if (_isOnline) await _loadScripts();
-              },
-              tooltip: 'Status aktualisieren',
+              onPressed: _checking
+                  ? null
+                  : () async {
+                      setState(() => _checking = true);
+                      await _checkStatus();
+                      if (_isOnline) await _loadScripts();
+                    },
+              tooltip: l.refreshStatus,
             ),
           if (!_isPro)
             IconButton(
               icon: const Icon(Icons.workspace_premium),
-              onPressed: () => showPaywallSheet(context,
-                  reason: 'Upgrade auf Pro und schalte alle Features frei.'),
-              tooltip: 'Pro kaufen',
+              onPressed: () =>
+                  showPaywallSheet(context, reason: l.upgradeProReason),
+              tooltip: l.buyPro,
             ),
         ],
       ),
@@ -740,15 +775,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Text(
                                 widget.profile.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge,
+                                style: Theme.of(context).textTheme.titleLarge,
                               ),
                               Text(
                                 widget.profile.ipAddress,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall,
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
                           ),
@@ -769,7 +800,7 @@ class _HomeScreenState extends State<HomeScreen> {
             FilledButton.icon(
               onPressed: _sendWol,
               icon: const Icon(Icons.power_settings_new),
-              label: const Text('Wake on LAN'),
+              label: Text(l.wakeOnLan),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(56),
               ),
@@ -781,8 +812,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Wake-on-LAN muss im BIOS und in den Netzwerkadaptereinstellungen des PCs aktiviert sein.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    l.wolHint,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey),
                   ),
                 ),
               ],
@@ -799,7 +833,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.mouse),
-                label: const Text('Maus & Tastatur'),
+                label: Text(l.mouseKeyboard),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),
@@ -812,7 +846,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => showVolumeSheet(context, _api),
                       icon: const Icon(Icons.volume_up, size: 18),
-                      label: const Text('Lautstärke'),
+                      label: Text(l.volume),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -820,7 +854,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => showClipboardSheet(context, _api),
                       icon: const Icon(Icons.content_paste, size: 18),
-                      label: const Text('Clipboard'),
+                      label: Text(l.clipboard),
                     ),
                   ),
                 ],
@@ -832,10 +866,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _proButton(
                       isPro: _isPro,
                       icon: Icons.screenshot_monitor,
-                      label: 'Bildschirm',
-                      onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => ScreenViewScreen(api: _api))),
-                      reason: 'Bildschirmübertragung ist ein Pro-Feature.',
+                      label: l.screen,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => ScreenViewScreen(api: _api))),
+                      reason: l.screenProReason,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -843,10 +879,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _proButton(
                       isPro: _isPro,
                       icon: Icons.folder_open,
-                      label: 'Dateien',
-                      onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => FileExplorerScreen(api: _api))),
-                      reason: 'Datei-Explorer ist ein Pro-Feature.',
+                      label: l.files,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => FileExplorerScreen(api: _api))),
+                      reason: l.filesProReason,
                     ),
                   ),
                 ],
@@ -858,10 +896,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _proButton(
                       isPro: _isPro,
                       icon: Icons.history,
-                      label: 'Verlauf',
-                      onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => HistoryScreen(api: _api))),
-                      reason: 'Skript-Verlauf ist ein Pro-Feature.',
+                      label: l.history,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => HistoryScreen(api: _api))),
+                      reason: l.historyProReason,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -869,7 +909,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _showSettingsSheet,
                       icon: const Icon(Icons.settings, size: 18),
-                      label: const Text('Einstellungen'),
+                      label: Text(l.settings),
                     ),
                   ),
                 ],
@@ -885,17 +925,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   for (final entry in [
-                    (0, 'Skripte'),
-                    (1, 'Abläufe'),
-                    (2, 'Kategorien'),
+                    (0, l.scripts),
+                    (1, l.chains),
+                    (2, l.categories),
                   ])
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          // Abläufe (1) und Kategorien (2) sind Pro-Features
+                          // Ablu00e4ufe (1) und Kategorien (2) sind Pro-Features
                           if (entry.$1 != 0 && !_isPro) {
                             showPaywallSheet(context,
-                                reason: '${entry.$2} sind ein Pro-Feature.');
+                                reason: l.sectionProReason(entry.$2));
                             return;
                           }
                           setState(() {
@@ -919,7 +959,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: Text(
                             entry.$2,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
                                   color: _activeSection == entry.$1
                                       ? Theme.of(context).colorScheme.primary
                                       : Colors.grey,
@@ -937,15 +980,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
 
             // Scripts – reorder mode
-            if (_isOnline && _activeSection == 0 && _reorderMode && _scripts.isNotEmpty) ...[
+            if (_isOnline &&
+                _activeSection == 0 &&
+                _reorderMode &&
+                _scripts.isNotEmpty) ...[
               // Scope toggle in reorder mode too
               _buildScopeToggle(context),
               const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'Zum Umsortieren ziehen',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  l.dragToReorder,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
               ReorderableListView.builder(
@@ -959,13 +1005,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     key: ValueKey(script.id),
                     leading: const Icon(Icons.drag_handle),
                     title: Text(script.name),
-                    trailing: const Icon(Icons.drag_indicator, color: Colors.grey),
+                    trailing:
+                        const Icon(Icons.drag_indicator, color: Colors.grey),
                   );
                 },
               ),
 
-            // Scripts – normal mode
-            ] else if (_isOnline && _activeSection == 0 && !_reorderMode && _scripts.isNotEmpty) ...[
+              // Scripts – normal mode
+            ] else if (_isOnline &&
+                _activeSection == 0 &&
+                !_reorderMode &&
+                _scripts.isNotEmpty) ...[
               _buildScopeToggle(context),
               const SizedBox(height: 12),
               GridView.builder(
@@ -988,8 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: accessible
                             ? () => _runScript(script)
                             : () => showPaywallSheet(context,
-                                reason:
-                                    'Mit Pro kannst du unbegrenzt viele Skripte nutzen (Gratis: 3).'),
+                                reason: l.unlimitedScriptsReason),
                       ),
                       if (!accessible)
                         Positioned.fill(
@@ -999,7 +1048,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Center(
-                              child: Icon(Icons.lock, color: Colors.white70, size: 28),
+                              child: Icon(Icons.lock,
+                                  color: Colors.white70, size: 28),
                             ),
                           ),
                         ),
@@ -1013,28 +1063,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Center(
                     child: Text(
                       _showGlobalScripts
-                          ? 'Keine systemübergreifenden Skripte konfiguriert.'
-                          : 'Keine systemspezifischen Skripte konfiguriert.',
+                          ? l.noGlobalScripts
+                          : l.noSystemScripts,
                       textAlign: TextAlign.center,
                     ),
                   ),
                 ),
               const SizedBox(height: 8),
-            ] else if (_isOnline && _activeSection == 0 && !_reorderMode && _scripts.isEmpty) ...[
-              const Center(
+            ] else if (_isOnline &&
+                _activeSection == 0 &&
+                !_reorderMode &&
+                _scripts.isEmpty) ...[
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text('Keine Skripte konfiguriert.'),
+                  padding: const EdgeInsets.all(32),
+                  child: Text(l.noScriptsConfigured),
                 ),
               ),
 
-            // Chains – reorder mode
-            ] else if (_isOnline && _activeSection == 1 && _reorderMode && _chains.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
+              // Chains – reorder mode
+            ] else if (_isOnline &&
+                _activeSection == 1 &&
+                _reorderMode &&
+                _chains.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'Zum Umsortieren ziehen',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  l.dragToReorder,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
               ReorderableListView.builder(
@@ -1048,14 +1104,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     key: ValueKey(chain.id),
                     leading: const Icon(Icons.drag_handle),
                     title: Text(chain.name),
-                    subtitle: Text('${chain.steps.length} Schritt${chain.steps.length == 1 ? "" : "e"}'),
-                    trailing: const Icon(Icons.drag_indicator, color: Colors.grey),
+                    subtitle: Text(l.stepCount(chain.steps.length)),
+                    trailing:
+                        const Icon(Icons.drag_indicator, color: Colors.grey),
                   );
                 },
               ),
 
-            // Chains – normal mode
-            ] else if (_isOnline && _activeSection == 1 && !_reorderMode && _chains.isNotEmpty) ...[
+              // Chains – normal mode
+            ] else if (_isOnline &&
+                _activeSection == 1 &&
+                !_reorderMode &&
+                _chains.isNotEmpty) ...[
               for (final chain in _chains)
                 Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -1091,23 +1151,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                   ),
                 ),
-            ] else if (_isOnline && _activeSection == 1 && !_reorderMode && _chains.isEmpty) ...[
-              const Center(
+            ] else if (_isOnline &&
+                _activeSection == 1 &&
+                !_reorderMode &&
+                _chains.isEmpty) ...[
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text('Keine Abläufe konfiguriert.'),
+                  padding: const EdgeInsets.all(32),
+                  child: Text(l.noChainsConfigured),
                 ),
               ),
 
-            // Kategorien
+              // Kategorien
             ] else if (_isOnline && _activeSection == 2) ...[
               Builder(builder: (ctx) {
                 if (orderedCats.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(32),
                       child: Text(
-                        'Keine Kategorien konfiguriert.\nGruppen können in der Web-Oberfläche vergeben werden.',
+                        l.noCategoriesConfigured,
                       ),
                     ),
                   );
@@ -1116,11 +1179,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   return ReorderableListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    header: const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                    header: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
-                        'Zum Umsortieren ziehen',
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                        l.dragToReorder,
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ),
                     itemCount: orderedCats.length,
@@ -1132,9 +1196,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         leading: const Icon(Icons.drag_handle),
                         title: Text(group),
                         subtitle: Text(
-                          '${grouped[group]?.length ?? 0} Skript${(grouped[group]?.length ?? 0) == 1 ? "" : "e"}',
+                          l.scriptCount(grouped[group]?.length ?? 0),
                         ),
-                        trailing: const Icon(Icons.drag_indicator, color: Colors.grey),
+                        trailing: const Icon(Icons.drag_indicator,
+                            color: Colors.grey),
                       );
                     },
                   );
@@ -1143,7 +1208,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   return InkWell(
                     key: ValueKey(group),
                     onTap: () => setState(() {
-                      _selectedCategory = _selectedCategory == group ? null : group;
+                      _selectedCategory =
+                          _selectedCategory == group ? null : group;
                     }),
                     onLongPress: () => _showGroupDialog(existingGroup: group),
                     borderRadius: BorderRadius.circular(12),
@@ -1158,7 +1224,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(
                               Icons.folder_outlined,
                               color: _selectedCategory == group
-                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer
                                   : Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
@@ -1169,12 +1237,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Text(
                                     group,
-                                    style: Theme.of(context).textTheme.titleSmall,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    '${grouped[group]!.length} Skript${grouped[group]!.length == 1 ? "" : "e"}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    l.scriptCount(grouped[group]!.length),
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),
@@ -1183,8 +1253,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: const Icon(Icons.edit_outlined, size: 18),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
-                              onPressed: () => _showGroupDialog(existingGroup: group),
-                              tooltip: 'Bearbeiten',
+                              onPressed: () =>
+                                  _showGroupDialog(existingGroup: group),
+                              tooltip: l.edit,
                             ),
                           ],
                         ),
@@ -1205,13 +1276,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       childAspectRatio: 2.2,
                       children: catCards,
                     ),
-                    if (_selectedCategory != null && grouped[_selectedCategory] != null) ...[
+                    if (_selectedCategory != null &&
+                        grouped[_selectedCategory] != null) ...[
                       const SizedBox(height: 16),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(
                           _selectedCategory!.toUpperCase(),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.8,
@@ -1221,7 +1296,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
@@ -1241,14 +1317,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }),
             ] else if (!_isOnline && !_checking) ...[
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
                     children: [
-                      Icon(Icons.cloud_off, size: 48, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Text('PC ist offline. Sende Wake-on-LAN zum Starten.'),
+                      const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      Text(l.pcOffline),
                     ],
                   ),
                 ),
@@ -1261,21 +1337,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Neu koppeln',
+                        l.repair,
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Gib den Kopplungscode vom PC-Agent ein, um dich zu verbinden.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        l.repairCodeHint,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _offlinePairCodeCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Kopplungscode',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.vpn_key_outlined),
+                        decoration: InputDecoration(
+                          labelText: l.pairCode,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.vpn_key_outlined),
                         ),
                         keyboardType: TextInputType.number,
                         enabled: !_offlinePairing,
@@ -1287,10 +1366,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
                             : const Icon(Icons.link),
-                        label: Text(_offlinePairing ? 'Verbinde...' : 'Koppeln'),
+                        label: Text(_offlinePairing ? l.connecting : l.pair),
                       ),
                     ],
                   ),
@@ -1303,4 +1383,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

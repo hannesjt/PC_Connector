@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 
 class InputControlScreen extends StatefulWidget {
@@ -36,7 +37,8 @@ class _InputControlScreenState extends State<InputControlScreen> {
   static const double _scrollStepThreshold = 0.25;
 
   // Keyboard
-  final TextEditingController _typeController = TextEditingController(text: '\u200b');
+  final TextEditingController _typeController =
+      TextEditingController(text: '\u200b');
   final FocusNode _typeFocus = FocusNode();
   String _lastText = '';
 
@@ -162,11 +164,12 @@ class _InputControlScreenState extends State<InputControlScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Maus & Tastatur'),
+        title: Text(l.mouseKeyboard),
       ),
       body: SafeArea(
         child: Column(
@@ -178,8 +181,9 @@ class _InputControlScreenState extends State<InputControlScreen> {
                 behavior: HitTestBehavior.opaque,
                 onPanUpdate: _onPanUpdate,
                 onTap: () => widget.api.mouseClick(button: 'left').ignore(),
-                onDoubleTap: () =>
-                    widget.api.mouseClick(button: 'left', double_: true).ignore(),
+                onDoubleTap: () => widget.api
+                    .mouseClick(button: 'left', double_: true)
+                    .ignore(),
                 onSecondaryTap: () =>
                     widget.api.mouseClick(button: 'right').ignore(),
                 onLongPress: () =>
@@ -204,14 +208,14 @@ class _InputControlScreenState extends State<InputControlScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Touchpad',
+                          l.touchpad,
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant.withAlpha(140),
                             fontSize: 13,
                           ),
                         ),
                         Text(
-                          'Tippen = Linksklick · Halten = Rechtsklick',
+                          l.touchpadHint,
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant.withAlpha(100),
                             fontSize: 11,
@@ -231,7 +235,7 @@ class _InputControlScreenState extends State<InputControlScreen> {
                 children: [
                   Expanded(
                     child: _MouseButton(
-                      label: 'Links',
+                      label: l.left,
                       icon: Icons.mouse,
                       onTap: () =>
                           widget.api.mouseClick(button: 'left').ignore(),
@@ -257,7 +261,7 @@ class _InputControlScreenState extends State<InputControlScreen> {
                             Icon(Icons.unfold_more,
                                 size: 22, color: colorScheme.onSurfaceVariant),
                             Text(
-                              'Scroll',
+                              l.scroll,
                               style: TextStyle(
                                 fontSize: 9,
                                 color: colorScheme.onSurfaceVariant,
@@ -271,7 +275,7 @@ class _InputControlScreenState extends State<InputControlScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: _MouseButton(
-                      label: 'Rechts',
+                      label: l.right,
                       icon: Icons.mouse,
                       onTap: () =>
                           widget.api.mouseClick(button: 'right').ignore(),
@@ -302,8 +306,7 @@ class _InputControlScreenState extends State<InputControlScreen> {
                   _buildSpecialKeyButton('', 'up', icon: Icons.arrow_upward),
                   _buildSpecialKeyButton('', 'down',
                       icon: Icons.arrow_downward),
-                  _buildSpecialKeyButton('', 'left',
-                      icon: Icons.arrow_back),
+                  _buildSpecialKeyButton('', 'left', icon: Icons.arrow_back),
                   _buildSpecialKeyButton('', 'right',
                       icon: Icons.arrow_forward),
                 ],
@@ -329,14 +332,15 @@ class _InputControlScreenState extends State<InputControlScreen> {
                             _resettingSentinel = true;
                             _typeController.value = TextEditingValue(
                               text: _sentinel,
-                              selection: TextSelection.collapsed(offset: _sentinel.length),
+                              selection: TextSelection.collapsed(
+                                  offset: _sentinel.length),
                             );
                             _resettingSentinel = false;
                             _lastText = '';
                             _typeFocus.requestFocus();
                           },
                           decoration: InputDecoration(
-                            hintText: 'Text tippen...',
+                            hintText: l.typeText,
                             prefixIcon: const Icon(Icons.keyboard),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -417,7 +421,8 @@ class _MouseButton extends StatelessWidget {
                 Transform(
                   alignment: Alignment.center,
                   transform: Matrix4.identity()..scale(-1.0, 1.0),
-                  child: Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
+                  child:
+                      Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
                 ),
               ],
             ],

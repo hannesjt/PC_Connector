@@ -1,7 +1,7 @@
 name: pc_connector
 description: Mobile app to wake and control your PC remotely.
 publish_to: "none"
-version: 1.0.0+2
+version: 1.4.0+4
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.8
   http: ^1.2.2
   shared_preferences: ^2.3.3

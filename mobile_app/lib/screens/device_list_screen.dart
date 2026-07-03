@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import '../models/pc_profile.dart';
 import '../services/api_service.dart';
 import '../services/purchase_service.dart';
@@ -67,7 +68,7 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
     final isPro = PurchaseService.instance.isPro;
     if (!isPro && _profiles.length >= kFreeMaxProfiles) {
       showPaywallSheet(context,
-          reason: 'Mit Pro kannst du mehrere PCs verwalten (Gratis: 1 PC).');
+          reason: AppLocalizations.of(context).multiPcProReason);
       return;
     }
     final result = await Navigator.of(context).push<bool>(
@@ -84,20 +85,21 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
   }
 
   void _deleteDevice(PcProfile profile) async {
+    final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Gerät entfernen?'),
-        content: Text('Möchtest du "${profile.name}" wirklich entfernen?'),
+        title: Text(l.removeDeviceTitle),
+        content: Text(l.removeDeviceConfirm(profile.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen'),
+            child: Text(l.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Entfernen'),
+            child: Text(l.remove),
           ),
         ],
       ),
@@ -118,20 +120,22 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
   }
 
   String _formatLastSeen(DateTime? lastSeen) {
-    if (lastSeen == null) return 'Noch nie gesehen';
+    final l = AppLocalizations.of(context);
+    if (lastSeen == null) return l.neverSeen;
     final now = DateTime.now();
     final diff = now.difference(lastSeen);
-    if (diff.inMinutes < 1) return 'Gerade eben online';
-    if (diff.inMinutes < 60) return 'Vor ${diff.inMinutes} Min. online';
-    if (diff.inHours < 24) return 'Vor ${diff.inHours} Std. online';
-    return 'Vor ${diff.inDays} Tag(en) online';
+    if (diff.inMinutes < 1) return l.onlineJustNow;
+    if (diff.inMinutes < 60) return l.onlineMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l.onlineHoursAgo(diff.inHours);
+    return l.onlineDaysAgo(diff.inDays);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PC Connector'),
+        title: Text(l.appTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -139,21 +143,21 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
               _onlineStatus.clear();
               _checkAllStatus();
             },
-            tooltip: 'Status aktualisieren',
+            tooltip: l.refreshStatus,
           ),
           if (!PurchaseService.instance.isPro)
             IconButton(
               icon: const Icon(Icons.workspace_premium),
-              onPressed: () => showPaywallSheet(context,
-                  reason: 'Upgrade auf Pro und schalte alle Features frei.'),
-              tooltip: 'Pro kaufen',
+              onPressed: () =>
+                  showPaywallSheet(context, reason: l.upgradeProReason),
+              tooltip: l.buyPro,
             ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addDevice,
         icon: const Icon(Icons.add),
-        label: const Text('Gerät hinzufügen'),
+        label: Text(l.addDevice),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -166,14 +170,15 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.devices, size: 64, color: Colors.grey),
+                              const Icon(Icons.devices,
+                                  size: 64, color: Colors.grey),
                               const SizedBox(height: 16),
-                              const Text('Keine Geräte konfiguriert.'),
+                              Text(l.noDevicesConfigured),
                               const SizedBox(height: 16),
                               FilledButton.icon(
                                 onPressed: _addDevice,
                                 icon: const Icon(Icons.add),
-                                label: const Text('Gerät hinzufügen'),
+                                label: Text(l.addDevice),
                               ),
                             ],
                           ),
@@ -226,6 +231,7 @@ class _DeviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -254,7 +260,7 @@ class _DeviceCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     if (!profile.isPaired)
                       Text(
-                        'Nicht gekoppelt',
+                        l.notPaired,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.orange,
                             ),
@@ -289,12 +295,12 @@ class _DeviceCard extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: onEdit,
-                tooltip: 'Einstellungen',
+                tooltip: l.settings,
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 onPressed: onDelete,
-                tooltip: 'Entfernen',
+                tooltip: l.remove,
               ),
             ],
           ),
@@ -326,7 +332,7 @@ class _GitHubBanner extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'PC-Agent herunterladen  →  github.com/hannesjt/PC_Connector',
+                AppLocalizations.of(context).downloadPcAgent,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: cs.primary,
                     ),

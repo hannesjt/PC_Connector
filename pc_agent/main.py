@@ -17,6 +17,59 @@ from services.discovery_service import start_discovery_listener
 
 
 # ---------------------------------------------------------------------------
+# UI language (tray menu + dialogs)
+#
+# Follows the operating-system UI language: German systems get German,
+# everything else falls back to English.
+# ---------------------------------------------------------------------------
+
+def _ui_language() -> str:
+    """Best-effort detection of the OS UI language, returns 'de' or 'en'."""
+    try:
+        if sys.platform == "win32":
+            import ctypes
+
+            langid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+            # Primary language ID 0x07 == LANG_GERMAN
+            return "de" if (langid & 0x3FF) == 0x07 else "en"
+    except Exception:
+        pass
+    try:
+        import locale
+
+        lang = locale.getdefaultlocale()[0] or ""
+    except Exception:
+        lang = ""
+    return "de" if lang.lower().startswith("de") else "en"
+
+
+_UI_TEXT = {
+    "de": {
+        "open_website": "Website öffnen",
+        "quit": "Beenden",
+        "already_running": (
+            "PC Connector Agent läuft bereits im Hintergrund.\n"
+            "Schaue in der Taskleiste nach dem Symbol."
+        ),
+    },
+    "en": {
+        "open_website": "Open website",
+        "quit": "Quit",
+        "already_running": (
+            "PC Connector Agent is already running in the background.\n"
+            "Check the system tray for the icon."
+        ),
+    },
+}
+
+
+def _tr(key: str) -> str:
+    """Returns the localized UI string for the given key."""
+    lang = _ui_language()
+    return _UI_TEXT.get(lang, _UI_TEXT["en"]).get(key, _UI_TEXT["en"][key])
+
+
+# ---------------------------------------------------------------------------
 # Single-instance guard
 # ---------------------------------------------------------------------------
 
@@ -46,8 +99,7 @@ def _ensure_single_instance() -> object:
                 HWND_DESKTOP = 0
                 ctypes.windll.user32.MessageBoxW(
                     HWND_DESKTOP,
-                    "PC Connector Agent läuft bereits im Hintergrund.\n"
-                    "Schaue in der Taskleiste nach dem Symbol.",
+                    _tr("already_running"),
                     "PC Connector Agent",
                     MB_OK | MB_ICONWARNING,
                 )
@@ -150,8 +202,8 @@ if __name__ == "__main__":
 
     image = Image.open(_get_icon_path())
     menu = pystray.Menu(
-        pystray.MenuItem("Website öffnen", open_website),
-        pystray.MenuItem("Beenden", exit_app),
+        pystray.MenuItem(_tr("open_website"), open_website),
+        pystray.MenuItem(_tr("quit"), exit_app),
     )
     tray = pystray.Icon("PC Connector", image, "PC Connector Agent", menu)
     tray.run()

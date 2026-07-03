@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -34,14 +35,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _clear() async {
+    final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Verlauf löschen'),
-        content: const Text('Gesamten Verlauf löschen?'),
+        title: Text(l.clearHistory),
+        content: Text(l.clearHistoryConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Löschen')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true), child: Text(l.delete)),
         ],
       ),
     );
@@ -53,22 +58,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Skript-Verlauf'),
+        title: Text(l.scriptHistory),
         actions: [
           if (_entries.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _clear,
-              tooltip: 'Verlauf löschen',
+              tooltip: l.clearHistory,
             ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _entries.isEmpty
-              ? const Center(child: Text('Kein Verlauf'))
+              ? Center(child: Text(l.noHistory))
               : ListView.builder(
                   itemCount: _entries.length,
                   itemBuilder: (ctx, i) {
@@ -90,8 +96,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         success ? Icons.check_circle : Icons.error,
                         color: success ? Colors.green : Colors.red,
                       ),
-                      title: Text(
-                        (e['script_name'] ?? e['script'] ?? 'Unbekannt') as String),
+                      title: Text((e['script_name'] ?? e['script'] ?? l.unknown)
+                          as String),
                       subtitle: Text(dateStr),
                       trailing: (e['stderr'] as String? ?? '').isNotEmpty
                           ? IconButton(
@@ -106,15 +112,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _showOutput(Map<String, dynamic> entry) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text((entry['script_name'] ?? entry['script'] ?? '') as String),
         content: SingleChildScrollView(
-          child: Text(entry['stderr'] as String? ?? '(kein Output)'),
+          child: Text(entry['stderr'] as String? ?? l.noOutput),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.ok)),
         ],
       ),
     );

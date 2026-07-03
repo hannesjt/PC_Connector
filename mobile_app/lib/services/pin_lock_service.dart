@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
+
 class PinLockService {
   PinLockService._();
   static final instance = PinLockService._();
@@ -64,7 +66,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
       widget.onUnlocked();
     } else {
       setState(() {
-        _error = 'Falsche PIN';
+        _error = AppLocalizations.of(context).wrongPin;
         _input = '';
       });
     }
@@ -72,6 +74,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -80,13 +83,15 @@ class _PinLockScreenState extends State<PinLockScreen> {
             children: [
               const Icon(Icons.lock, size: 48),
               const SizedBox(height: 16),
-              Text('PIN eingeben', style: Theme.of(context).textTheme.headlineSmall),
+              Text(l.enterPin,
+                  style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(4, (i) {
                   return Container(
-                    width: 16, height: 16,
+                    width: 16,
+                    height: 16,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -120,25 +125,28 @@ class _PinLockScreenState extends State<PinLockScreen> {
     ];
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: rows.map((row) => Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: row.map((k) {
-          if (k.isEmpty) return const SizedBox(width: 72, height: 72);
-          return SizedBox(
-            width: 72, height: 72,
-            child: TextButton(
-              onPressed: k == '⌫' ? _backspace : () => _addDigit(k),
-              child: Text(
-                k,
-                style: TextStyle(
-                  fontSize: k == '⌫' ? 20 : 26,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      )).toList(),
+      children: rows
+          .map((row) => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: row.map((k) {
+                  if (k.isEmpty) return const SizedBox(width: 72, height: 72);
+                  return SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: TextButton(
+                      onPressed: k == '⌫' ? _backspace : () => _addDigit(k),
+                      child: Text(
+                        k,
+                        style: TextStyle(
+                          fontSize: k == '⌫' ? 20 : 26,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ))
+          .toList(),
     );
   }
 }

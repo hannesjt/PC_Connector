@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import '../l10n/app_localizations.dart';
 import '../models/pc_profile.dart';
 import '../services/api_service.dart';
 import '../services/discovery_service.dart';
@@ -53,6 +54,7 @@ class _SetupScreenState extends State<SetupScreen> {
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l = AppLocalizations.of(context);
     final storage = StorageService();
     final code = _codeCtrl.text.trim();
     final name = _nameCtrl.text.trim();
@@ -65,7 +67,7 @@ class _SetupScreenState extends State<SetupScreen> {
       if (code.isNotEmpty) {
         setState(() {
           _pairing = true;
-          _statusText = 'Verbinde...';
+          _statusText = l.connecting;
         });
         try {
           final api = ApiService(updated);
@@ -73,7 +75,7 @@ class _SetupScreenState extends State<SetupScreen> {
           final result = await api.pairFull(code, deviceModel);
           if (!mounted) return;
           if (result == null) {
-            _showError('Kopplungscode ungültig oder abgelaufen');
+            _showError(l.pairCodeInvalid);
             setState(() {
               _pairing = false;
               _statusText = '';
@@ -86,7 +88,7 @@ class _SetupScreenState extends State<SetupScreen> {
           );
         } catch (e) {
           if (!mounted) return;
-          _showError('Verbindung fehlgeschlagen: $e');
+          _showError(l.connectionFailed(e));
           setState(() {
             _pairing = false;
             _statusText = '';
@@ -105,13 +107,13 @@ class _SetupScreenState extends State<SetupScreen> {
     } else {
       // New device: discover agents on network, then pair
       if (code.isEmpty) {
-        _showError('Bitte Kopplungscode eingeben');
+        _showError(l.enterPairCode);
         return;
       }
 
       setState(() {
         _pairing = true;
-        _statusText = 'Suche Geräte im Netzwerk...';
+        _statusText = l.searchingDevices;
       });
 
       try {
@@ -119,8 +121,7 @@ class _SetupScreenState extends State<SetupScreen> {
         if (!mounted) return;
 
         if (agents.isEmpty) {
-          _showError(
-              'Kein PC-Agent im Netzwerk gefunden. Ist der Agent gestartet?');
+          _showError(l.noAgentFound);
           setState(() {
             _pairing = false;
             _statusText = '';
@@ -128,7 +129,7 @@ class _SetupScreenState extends State<SetupScreen> {
           return;
         }
 
-        setState(() => _statusText = 'Versuche Kopplung...');
+        setState(() => _statusText = l.tryingToPair);
 
         final deviceModel = await _getDeviceModel();
         for (final agent in agents) {
@@ -151,11 +152,15 @@ class _SetupScreenState extends State<SetupScreen> {
               deviceToken: result.token,
             );
 
-            final dupError = await storage.addProfile(profile);
+            final duplicate = await storage.addProfile(profile);
             if (!mounted) return;
-            if (dupError != null) {
-              _showError(dupError);
-              setState(() { _pairing = false; _statusText = ''; });
+            if (duplicate != null) {
+              _showError(l.duplicatePc(
+                  '${duplicate.ipAddress}:${duplicate.port}', duplicate.name));
+              setState(() {
+                _pairing = false;
+                _statusText = '';
+              });
               return;
             }
             Navigator.of(context).pop(true);
@@ -164,10 +169,10 @@ class _SetupScreenState extends State<SetupScreen> {
         }
 
         if (!mounted) return;
-        _showError('Kopplungscode ungültig oder abgelaufen');
+        _showError(l.pairCodeInvalid);
       } catch (e) {
         if (!mounted) return;
-        _showError('Fehler bei der Suche: $e');
+        _showError(l.searchError(e));
       } finally {
         if (mounted) {
           setState(() {
@@ -187,10 +192,10 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            _isEditing ? 'Geräteeinstellungen' : 'Gerät hinzufügen'),
+        title: Text(_isEditing ? l.deviceSettings : l.addDevice),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -206,8 +211,8 @@ class _SetupScreenState extends State<SetupScreen> {
               TextFormField(
                 controller: _nameCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Name',
-                  hintText: _isEditing ? null : 'Mein PC',
+                  labelText: l.name,
+                  hintText: _isEditing ? null : l.myPcHint,
                   prefixIcon: const Icon(Icons.label),
                   border: const OutlineInputBorder(),
                 ),
@@ -218,30 +223,30 @@ class _SetupScreenState extends State<SetupScreen> {
               if (_isEditing) ...[
                 TextFormField(
                   initialValue: widget.editProfile!.macAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'MAC-Adresse',
-                    prefixIcon: Icon(Icons.lan),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l.macAddress,
+                    prefixIcon: const Icon(Icons.lan),
+                    border: const OutlineInputBorder(),
                   ),
                   enabled: false,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   initialValue: widget.editProfile!.ipAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'IP-Adresse',
-                    prefixIcon: Icon(Icons.wifi),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l.ipAddress,
+                    prefixIcon: const Icon(Icons.wifi),
+                    border: const OutlineInputBorder(),
                   ),
                   enabled: false,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   initialValue: widget.editProfile!.port.toString(),
-                  decoration: const InputDecoration(
-                    labelText: 'Port',
-                    prefixIcon: Icon(Icons.numbers),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l.port,
+                    prefixIcon: const Icon(Icons.numbers),
+                    border: const OutlineInputBorder(),
                   ),
                   enabled: false,
                 ),
@@ -251,16 +256,12 @@ class _SetupScreenState extends State<SetupScreen> {
               const Divider(),
               const SizedBox(height: 8),
               Text(
-                _isEditing
-                    ? 'Erneut koppeln (optional)'
-                    : 'Gerät koppeln',
+                _isEditing ? l.repairOptional : l.pairDevice,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 4),
               Text(
-                _isEditing
-                    ? 'Nur ausfüllen, wenn du das Gerät neu koppeln möchtest.'
-                    : 'Öffne die Web-Oberfläche auf deinem PC und generiere einen Kopplungscode.',
+                _isEditing ? l.repairHint : l.pairHint,
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
@@ -269,19 +270,17 @@ class _SetupScreenState extends State<SetupScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _codeCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Kopplungscode',
+                decoration: InputDecoration(
+                  labelText: l.pairCode,
                   hintText: '000000',
-                  prefixIcon: Icon(Icons.pin),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.pin),
+                  border: const OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 maxLength: 6,
                 validator: _isEditing
                     ? null
-                    : (v) => v == null || v.trim().isEmpty
-                        ? 'Code eingeben'
-                        : null,
+                    : (v) => v == null || v.trim().isEmpty ? l.enterCode : null,
               ),
               const SizedBox(height: 8),
               if (_statusText.isNotEmpty)
@@ -319,10 +318,10 @@ class _SetupScreenState extends State<SetupScreen> {
                       )
                     : Icon(_isEditing ? Icons.save : Icons.link),
                 label: Text(_pairing
-                    ? 'Verbinde...'
+                    ? l.connecting
                     : _isEditing
-                        ? 'Speichern'
-                        : 'Verbinden'),
+                        ? l.save
+                        : l.connect),
               ),
             ],
           ),

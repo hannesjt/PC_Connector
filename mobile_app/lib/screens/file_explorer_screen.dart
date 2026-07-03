@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 
 class FileExplorerScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler: $e')),
+        SnackBar(content: Text(AppLocalizations.of(context).error(e))),
       );
     }
   }
@@ -63,18 +64,19 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   void _openFile(Map<String, dynamic> item) {
     widget.api.openFileOnPc(item['path'] as String);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Datei wird auf dem PC geöffnet')),
+      SnackBar(content: Text(AppLocalizations.of(context).fileOpeningOnPc)),
     );
   }
 
   Future<void> _downloadFile(Map<String, dynamic> item) async {
+    final l = AppLocalizations.of(context);
     final filePath = item['path'] as String;
     final fileName = item['name'] as String;
 
     setState(() => _downloadingPath = filePath);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Lade "$fileName" herunter...')),
+      SnackBar(content: Text(l.downloading(fileName))),
     );
 
     try {
@@ -88,7 +90,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
           .timeout(const Duration(minutes: 5));
 
       if (response.statusCode != 200) {
-        throw Exception('Server-Fehler ${response.statusCode}');
+        throw Exception(l.serverError(response.statusCode));
       }
 
       // Save to Downloads folder
@@ -118,7 +120,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gespeichert: ${destFile.path.split('/').last}'),
+          content: Text(l.savedAs(destFile.path.split('/').last)),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 4),
         ),
@@ -128,7 +130,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Download fehlgeschlagen: $e'),
+          content: Text(l.downloadFailed(e)),
           backgroundColor: Colors.red,
         ),
       );
@@ -138,6 +140,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
   }
 
   void _showContextMenu(BuildContext context, Map<String, dynamic> item) {
+    final l = AppLocalizations.of(context);
     final isDir = item['is_dir'] == true;
     showModalBottomSheet(
       context: context,
@@ -156,13 +159,13 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               subtitle:
-                  isDir ? const Text('Ordner') : Text(_formatSize(item['size'])),
+                  isDir ? Text(l.folder) : Text(_formatSize(item['size'])),
             ),
             const Divider(height: 1),
             if (!isDir) ...[
               ListTile(
                 leading: const Icon(Icons.download),
-                title: const Text('Herunterladen'),
+                title: Text(l.download),
                 onTap: () {
                   Navigator.pop(context);
                   _downloadFile(item);
@@ -170,7 +173,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.open_in_new),
-                title: const Text('Auf PC öffnen'),
+                title: Text(l.openOnPc),
                 onTap: () {
                   Navigator.pop(context);
                   _openFile(item);
@@ -180,7 +183,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
             if (isDir)
               ListTile(
                 leading: const Icon(Icons.folder_open),
-                title: const Text('Ordner öffnen'),
+                title: Text(l.openFolder),
                 onTap: () {
                   Navigator.pop(context);
                   _navigateTo(item['path'] as String);
@@ -200,16 +203,14 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         name.endsWith('.png') ||
         name.endsWith('.gif') ||
         name.endsWith('.webp')) return Icons.image;
-    if (name.endsWith('.mp4') ||
-        name.endsWith('.avi') ||
-        name.endsWith('.mkv')) return Icons.movie;
+    if (name.endsWith('.mp4') || name.endsWith('.avi') || name.endsWith('.mkv'))
+      return Icons.movie;
     if (name.endsWith('.mp3') ||
         name.endsWith('.wav') ||
         name.endsWith('.flac')) return Icons.audio_file;
     if (name.endsWith('.pdf')) return Icons.picture_as_pdf;
-    if (name.endsWith('.zip') ||
-        name.endsWith('.rar') ||
-        name.endsWith('.7z')) return Icons.archive;
+    if (name.endsWith('.zip') || name.endsWith('.rar') || name.endsWith('.7z'))
+      return Icons.archive;
     return Icons.insert_drive_file;
   }
 
@@ -226,6 +227,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return PopScope(
       canPop: _pathHistory.isEmpty,
       onPopInvokedWithResult: (didPop, _) {
@@ -233,7 +235,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_currentPath.isEmpty ? 'PC-Dateien' : _currentPath),
+          title: Text(_currentPath.isEmpty ? l.pcFiles : _currentPath),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: _goBack,
@@ -242,7 +244,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : _items.isEmpty
-                ? const Center(child: Text('Leer'))
+                ? Center(child: Text(l.empty))
                 : ListView.builder(
                     itemCount: _items.length,
                     itemBuilder: (ctx, i) {
@@ -254,8 +256,8 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                             ? const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Icon(_iconForItem(item)),
                         title: Text(
@@ -263,12 +265,10 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: isDir
-                            ? null
-                            : Text(_formatSize(item['size'])),
-                        trailing: isDir
-                            ? const Icon(Icons.chevron_right)
-                            : null,
+                        subtitle:
+                            isDir ? null : Text(_formatSize(item['size'])),
+                        trailing:
+                            isDir ? const Icon(Icons.chevron_right) : null,
                         onTap: () {
                           if (isDir) {
                             _navigateTo(item['path'] as String);

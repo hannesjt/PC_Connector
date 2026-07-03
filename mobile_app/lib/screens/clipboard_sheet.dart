@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 
 class ClipboardSheet extends StatefulWidget {
@@ -42,20 +43,21 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
   }
 
   Future<void> _sendToPC() async {
+    final l = AppLocalizations.of(context);
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     try {
       await widget.api.setClipboard(text);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('In PC-Zwischenablage kopiert')),
+        SnackBar(content: Text(l.copiedToPcClipboard)),
       );
       _controller.clear();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Fehler: $e'),
+          content: Text(l.error(e)),
           backgroundColor: Colors.red,
         ),
       );
@@ -73,12 +75,14 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
     await Clipboard.setData(ClipboardData(text: _pcClipboard));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('In Handy-Zwischenablage kopiert')),
+      SnackBar(
+          content: Text(AppLocalizations.of(context).copiedToPhoneClipboard)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -89,7 +93,8 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: cs.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
@@ -97,11 +102,11 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Zwischenablage', style: Theme.of(context).textTheme.titleLarge),
+          Text(l.clipboardTitle, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 16),
 
           // PC clipboard content
-          Text('PC-Zwischenablage:', style: Theme.of(context).textTheme.labelLarge),
+          Text(l.pcClipboard, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 4),
           Container(
             width: double.infinity,
@@ -115,7 +120,7 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
                 ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
                 : SingleChildScrollView(
                     child: Text(
-                      _pcClipboard.isEmpty ? '(leer)' : _pcClipboard,
+                      _pcClipboard.isEmpty ? l.emptyParens : _pcClipboard,
                       style: TextStyle(
                         color: _pcClipboard.isEmpty ? Colors.grey : null,
                       ),
@@ -128,13 +133,13 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
               child: TextButton.icon(
                 onPressed: _copyToPhone,
                 icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Auf Handy kopieren'),
+                label: Text(l.copyToPhone),
               ),
             ),
           const SizedBox(height: 12),
 
           // Send to PC
-          Text('An PC senden:', style: Theme.of(context).textTheme.labelLarge),
+          Text(l.sendToPcLabel, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -144,7 +149,7 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
                   maxLines: 3,
                   minLines: 1,
                   decoration: InputDecoration(
-                    hintText: 'Text eingeben...',
+                    hintText: l.enterTextHint,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -158,12 +163,12 @@ class _ClipboardSheetState extends State<ClipboardSheet> {
                   IconButton(
                     onPressed: _pasteFromPhone,
                     icon: const Icon(Icons.content_paste),
-                    tooltip: 'Einfügen',
+                    tooltip: l.paste,
                   ),
                   IconButton(
                     onPressed: _sendToPC,
                     icon: const Icon(Icons.send),
-                    tooltip: 'An PC senden',
+                    tooltip: l.sendToPc,
                   ),
                 ],
               ),

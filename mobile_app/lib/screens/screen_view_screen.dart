@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 
 class ScreenViewScreen extends StatefulWidget {
@@ -25,7 +26,8 @@ class _ScreenViewScreenState extends State<ScreenViewScreen> {
   void initState() {
     super.initState();
     _capture();
-    _timer = Timer.periodic(const Duration(milliseconds: 800), (_) => _capture());
+    _timer =
+        Timer.periodic(const Duration(milliseconds: 800), (_) => _capture());
   }
 
   @override
@@ -56,13 +58,14 @@ class _ScreenViewScreenState extends State<ScreenViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bildschirm'),
+        title: Text(l.screen),
         actions: [
           PopupMenuButton<int>(
             icon: const Icon(Icons.tune),
-            tooltip: 'Qualität',
+            tooltip: l.quality,
             onSelected: (val) {
               setState(() {
                 switch (val) {
@@ -82,9 +85,9 @@ class _ScreenViewScreenState extends State<ScreenViewScreen> {
               });
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 0, child: Text('Niedrig')),
-              const PopupMenuItem(value: 1, child: Text('Mittel')),
-              const PopupMenuItem(value: 2, child: Text('Hoch')),
+              PopupMenuItem(value: 0, child: Text(l.qualityLow)),
+              PopupMenuItem(value: 1, child: Text(l.qualityMedium)),
+              PopupMenuItem(value: 2, child: Text(l.qualityHigh)),
             ],
           ),
         ],
@@ -92,7 +95,7 @@ class _ScreenViewScreenState extends State<ScreenViewScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _imageBytes == null
-              ? const Center(child: Text('Kein Bild'))
+              ? Center(child: Text(l.noImage))
               : InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 4.0,

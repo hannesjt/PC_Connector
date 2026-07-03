@@ -29,13 +29,19 @@ class StorageService {
     await prefs.setString(_profilesKey, json);
   }
 
-  Future<String?> addProfile(PcProfile profile) async {
+  /// Adds [profile] unless a PC with the same IP+port already exists.
+  ///
+  /// Returns the conflicting profile when a duplicate is found, or `null` on
+  /// success. The caller is responsible for showing a localized message.
+  Future<PcProfile?> addProfile(PcProfile profile) async {
     final profiles = await loadProfiles();
     // Check for duplicate IP+port
-    final duplicate = profiles.where((p) =>
-        p.ipAddress == profile.ipAddress && p.port == profile.port).toList();
+    final duplicate = profiles
+        .where(
+            (p) => p.ipAddress == profile.ipAddress && p.port == profile.port)
+        .toList();
     if (duplicate.isNotEmpty) {
-      return 'Ein PC mit der Adresse ${profile.ipAddress}:${profile.port} ist bereits vorhanden (${duplicate.first.name}).';
+      return duplicate.first;
     }
     profiles.add(profile);
     await saveProfiles(profiles);

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/api_service.dart';
 
 class VolumeControlSheet extends StatefulWidget {
@@ -68,14 +69,16 @@ class _VolumeControlSheetState extends State<VolumeControlSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
               color: cs.outlineVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(height: 16),
-          Text('Lautstärke', style: Theme.of(context).textTheme.titleLarge),
+          Text(AppLocalizations.of(context).volume,
+              style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 20),
           if (_loading)
             const CircularProgressIndicator()
