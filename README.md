@@ -28,10 +28,10 @@ Ein kleiner Server (`PC_Connector_Agent.exe`) läuft auf dem PC im Hintergrund. 
 
 ### Komponenten
 
-| Komponente | Technologie | Beschreibung |
-|---|---|---|
-| **PC Agent** | Python + FastAPI | Server-Prozess auf dem PC, stellt REST-API + Weboberfläche bereit |
-| **Android App** | Flutter | Smartphone-App zur Steuerung |
+| Komponente      | Technologie      | Beschreibung                                                      |
+| --------------- | ---------------- | ----------------------------------------------------------------- |
+| **PC Agent**    | Python + FastAPI | Server-Prozess auf dem PC, stellt REST-API + Weboberfläche bereit |
+| **Android App** | Flutter          | Smartphone-App zur Steuerung                                      |
 
 ---
 
@@ -39,36 +39,36 @@ Ein kleiner Server (`PC_Connector_Agent.exe`) läuft auf dem PC im Hintergrund. 
 
 ### Kostenlos
 
-| Feature | Beschreibung |
-|---|---|
-| ⚡ **Wake-on-LAN** | PC aus dem Schlaf aufwecken, auch wenn er ausgeschaltet ist |
+| Feature                       | Beschreibung                                                      |
+| ----------------------------- | ----------------------------------------------------------------- |
+| ⚡ **Wake-on-LAN**            | PC aus dem Schlaf aufwecken, auch wenn er ausgeschaltet ist       |
 | 📡 **Automatische Erkennung** | App findet den PC automatisch im lokalen Netzwerk (UDP-Broadcast) |
-| 🔒 **Sicheres Pairing** | Einmaliger Code – kein Passwort im Klartext |
-| ▶ **Skripte ausführen** | Bis zu 3 Windows-Befehle per Knopfdruck starten |
-| 🖱️ **Maus & Tastatur** | PC-Maus und Tastatur vom Handy aus fernsteuern |
-| 🔊 **Lautstärke-Regler** | Schieberegler für PC-Lautstärke direkt aus der App |
-| 📋 **Zwischenablage senden** | Text vom Handy in die PC-Zwischenablage übertragen |
-| 🌐 **Weboberfläche** | Vollständige Konfiguration im Browser, kein App-Update nötig |
-| 🌙 **Dark/Light Mode** | App-Theme frei wählbar |
+| 🔒 **Sicheres Pairing**       | Einmaliger Code – kein Passwort im Klartext                       |
+| ▶ **Skripte ausführen**       | Bis zu 3 Windows-Befehle per Knopfdruck starten                   |
+| 🖱️ **Maus & Tastatur**        | PC-Maus und Tastatur vom Handy aus fernsteuern                    |
+| 🔊 **Lautstärke-Regler**      | Schieberegler für PC-Lautstärke direkt aus der App                |
+| 📋 **Zwischenablage senden**  | Text vom Handy in die PC-Zwischenablage übertragen                |
+| 🌐 **Weboberfläche**          | Vollständige Konfiguration im Browser, kein App-Update nötig      |
+| 🌙 **Dark/Light Mode**        | App-Theme frei wählbar                                            |
 
 ### Pro (3 €/Monat)
 
-| Feature | Beschreibung |
-|---|---|
-| ∞ **Unbegrenzte Skripte** | Mehr als 3 Skripte anlegen und ausführen |
-| 🔗 **Abläufe / Script-Chains** | Mehrschrittige Automatisierungen mit Verzögerungen |
-| 📁 **Gruppen & Kategorien** | Skripte organisieren und per Drag & Drop sortieren |
-| 🖥️ **Mehrere PC-Profile** | Mehrere PCs in der App verwalten |
-| 🖼️ **Bildschirmübertragung** | PC-Bildschirm live auf dem Handy anzeigen (readonly) |
-| 📂 **Datei-Explorer** | Dateistruktur des PCs durchsuchen, Dateien hoch- und herunterladen |
-| 📜 **Skript-Verlauf** | Log aller ausgeführten Skripte mit Ergebnis |
-| 🔐 **PIN-Sperre** | App per PIN absichern |
+| Feature                        | Beschreibung                                                       |
+| ------------------------------ | ------------------------------------------------------------------ |
+| ∞ **Unbegrenzte Skripte**      | Mehr als 3 Skripte anlegen und ausführen                           |
+| 🔗 **Abläufe / Script-Chains** | Mehrschrittige Automatisierungen mit Verzögerungen                 |
+| 📁 **Gruppen & Kategorien**    | Skripte organisieren und per Drag & Drop sortieren                 |
+| 🖥️ **Mehrere PC-Profile**      | Mehrere PCs in der App verwalten                                   |
+| 🖼️ **Bildschirmübertragung**   | PC-Bildschirm live auf dem Handy anzeigen (readonly)               |
+| 📂 **Datei-Explorer**          | Dateistruktur des PCs durchsuchen, Dateien hoch- und herunterladen |
+| 📜 **Skript-Verlauf**          | Log aller ausgeführten Skripte mit Ergebnis                        |
+| 🔐 **PIN-Sperre**              | App per PIN absichern                                              |
 
 ---
 
 ## Screenshots
 
-> *Screenshots folgen in einer späteren Version.*
+> _Screenshots folgen in einer späteren Version._
 
 ---
 
@@ -76,10 +76,10 @@ Ein kleiner Server (`PC_Connector_Agent.exe`) läuft auf dem PC im Hintergrund. 
 
 Den neuesten Release findest du unter [**Releases**](../../releases/latest):
 
-| Datei | Für wen | Größe ca. |
-|---|---|---|
-| `PC_Connector_Agent.exe` | PC (Windows 10/11) – kein Python nötig | ~17 MB |
-| `app-arm64-v8a-release.apk` | Android (moderne Geräte, z.B. Pixel, Samsung S-Serie) | ~17 MB |
+| Datei                       | Für wen                                               | Größe ca. |
+| --------------------------- | ----------------------------------------------------- | --------- |
+| `PC_Connector_Agent.exe`    | PC (Windows 10/11) – kein Python nötig                | ~17 MB    |
+| `app-arm64-v8a-release.apk` | Android (moderne Geräte, z.B. Pixel, Samsung S-Serie) | ~17 MB    |
 
 ---
 
@@ -115,12 +115,12 @@ Geräte-Manager → Netzwerkkarte → Eigenschaften → Erweitert -> „Wake on 
 
 Erreichbar unter `localhost`.
 
-| Bereich | Funktion |
-|---|---|
-| **Gerätekopplung** | Pairing-Codes generieren, verbundene Geräte anzeigen und entfernen |
-| **Skripte** | Skripte anlegen, bearbeiten, Gruppe zuweisen, per Drag & Drop sortieren |
-| **Abläufe** | Mehrschrittige Abläufe mit Verzögerungen konfigurieren |
-| **Gruppen** | Kategorien anlegen und Skripte zuweisen |
+| Bereich            | Funktion                                                                |
+| ------------------ | ----------------------------------------------------------------------- |
+| **Gerätekopplung** | Pairing-Codes generieren, verbundene Geräte anzeigen und entfernen      |
+| **Skripte**        | Skripte anlegen, bearbeiten, Gruppe zuweisen, per Drag & Drop sortieren |
+| **Abläufe**        | Mehrschrittige Abläufe mit Verzögerungen konfigurieren                  |
+| **Gruppen**        | Kategorien anlegen und Skripte zuweisen                                 |
 
 ---
 
@@ -184,4 +184,3 @@ PC Connector ist für den Einsatz im **lokalen Heimnetzwerk** ausgelegt.
 ## Lizenz
 
 MIT License – Copyright (c) 2026 Hannes Jütting – siehe [LICENSE](LICENSE)
-

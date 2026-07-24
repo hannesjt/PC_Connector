@@ -1,0 +1,11 @@
+services:
+  pc-connector-web:
+    build: .
+    image: pc-connector-web:latest
+    container_name: pc-connector-web
+    restart: unless-stopped
+    # Host networking is REQUIRED so Wake-on-LAN and UDP discovery broadcasts
+    # reach the LAN. The app is then served on http://<proxmox-ip>:8080
+    network_mode: host
+    environment:
+      - PORT=8080
