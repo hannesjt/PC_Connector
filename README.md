@@ -28,10 +28,10 @@ Ein kleiner Server (`PC_Connector_Agent.exe`) läuft auf dem PC im Hintergrund. 
 
 ### Komponenten
 
-| Komponente      | Technologie      | Beschreibung                                                      |
-| --------------- | ---------------- | ----------------------------------------------------------------- |
-| **PC Agent**    | Python + FastAPI | Server-Prozess auf dem PC, stellt REST-API + Weboberfläche bereit |
-| **Android App** | Flutter          | Smartphone-App zur Steuerung                                      |
+| Komponente   | Technologie      | Beschreibung                                                      |
+| ------------ | ---------------- | ----------------------------------------------------------------- |
+| **PC Agent** | Python + FastAPI | Server-Prozess auf dem PC, stellt REST-API + Weboberfläche bereit |
+| **App**      | Vue / Nuxt       | Eine Codebasis für Web, Mobil (Capacitor) und Desktop (Electron)  |
 
 ---
 
@@ -104,10 +104,17 @@ Geräte-Manager → Netzwerkkarte → Eigenschaften → Erweitert -> „Wake on 
 
 ### Android App
 
-1. `app-arm64-v8a-release.apk` auf dem Handy herunterladen.
+1. `PC_Connector.apk` auf dem Handy herunterladen.
 2. Vor der Installation: **Einstellungen → Sicherheit → Aus unbekannten Quellen installieren** aktivieren
 3. APK antippen und installieren
 4. App starten -> Gerät hinzufügen -> Namen und den Code auf der Website eingeben -> Verbinden.
+
+---
+
+### Desktop App
+
+Die Desktop-App (Electron) als Setup-EXE aus den Releases herunterladen und
+ausführen. Sie bringt Wake-on-LAN und Netzwerk-Discovery direkt mit.
 
 ---
 
@@ -150,8 +157,8 @@ command: powershell -c "(New-Object -ComObject WScript.Shell).SendKeys([char]173
 ### Voraussetzungen
 
 - Python 3.12+
-- Flutter 3.x (SDK)
-- Android SDK + JDK 17
+- Node.js 20+
+- Android SDK + JDK 17 (für die Android-App)
 
 ### PC Agent EXE
 
@@ -161,13 +168,29 @@ build_agent.bat
 
 Ausgabe: `pc_agent\dist\PC_Connector_Agent.exe`
 
-### Android APK
+### App (Android + iOS + Desktop) – ein Befehl
 
 ```bat
-build_apk.bat
+build_all.bat
 ```
 
-Ausgabe: `mobile_app\build\app\outputs\flutter-apk\`
+Baut alle vom aktuellen Betriebssystem unterstützten Ziele (iOS nur unter macOS).
+Einzelnes Ziel: `build_all.bat android`, `build_all.bat ios` oder `build_all.bat exe`.
+
+Alternativ direkt über npm im Ordner `web_app`:
+
+```bash
+npm run build:all        # Android + iOS + Desktop (je nach OS)
+npm run build:android    # nur Android APK
+npm run build:ios        # nur iOS (macOS)
+npm run build:desktop    # nur Electron-EXE
+```
+
+Ausgaben:
+
+- Android: `web_app\android\app\build\outputs\apk\release\`
+- iOS: `web_app/build/App.xcarchive` (in Xcode signieren/exportieren)
+- Desktop: `web_app\release\`
 
 ---
 

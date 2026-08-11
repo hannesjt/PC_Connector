@@ -1,0 +1,20 @@
+appId: com.hannesjt.pcconnector
+productName: PC Connector
+directories:
+  output: release
+files:
+  - electron/**
+  - public/icon.png
+  - package.json
+extraResources:
+  - from: .output
+    to: output
+win:
+  target: nsis
+  icon: public/icon.ico
+mac:
+  target: dmg
+  icon: public/icon.png
+linux:
+  target: AppImage
+  icon: public/icon.png

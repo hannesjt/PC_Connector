@@ -29,26 +29,25 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short
 
-  # ── Flutter / Dart Tests ──────────────────────────────
-  flutter-tests:
+  # ── Web App (Vue/Nuxt) Build ──────────────────────────
+  web-app-build:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile_app
+        working-directory: web_app
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v4
         with:
-          flutter-version: "3.29.x"
-          channel: stable
+          node-version: "20"
 
       - name: Install dependencies
-        run: flutter pub get
+        run: npm install
 
-      - name: Analyze code
-        run: dart analyze --fatal-infos || true
+      - name: Type check
+        run: npx nuxi typecheck || true
 
-      - name: Run tests
-        run: flutter test --reporter expanded
+      - name: Build
+        run: npm run build

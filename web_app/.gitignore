@@ -1,0 +1,16 @@
+# Nuxt / Nitro
+.nuxt/
+.output/
+dist/
+node_modules/
+
+# Capacitor native projects
+android/
+ios/
+
+# Electron build output
+release/
+
+# Misc
+.DS_Store
+*.log

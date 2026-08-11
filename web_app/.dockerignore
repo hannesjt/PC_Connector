@@ -1,9 +1,8 @@
-**/node_modules
-**/dist
-**/.angular
-**/npm-debug.log
-Dockerfile
-docker-compose.yml
-.dockerignore
-README.md
-**/.git
+node_modules
+.nuxt
+.output
+release
+android
+ios
+.git
+*.log

@@ -1,0 +1,41 @@
+{
+  "name": "pc-connector-app",
+  "version": "1.0.0",
+  "description": "PC Connector – Vue/Nuxt app for web, mobile (Capacitor) and desktop (Electron).",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "nuxt dev --host 0.0.0.0",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
+    "postinstall": "nuxt prepare",
+    "cap:sync": "nuxt generate && cap sync",
+    "cap:android": "nuxt generate && cap sync android && cap open android",
+    "cap:ios": "nuxt generate && cap sync ios && cap open ios",
+    "electron:dev": "cross-env ELECTRON_DEV=1 electron .",
+    "electron:build": "nuxt build && electron-builder",
+    "build:all": "node scripts/build-all.mjs",
+    "build:android": "node scripts/build-all.mjs android",
+    "build:ios": "node scripts/build-all.mjs ios",
+    "build:desktop": "node scripts/build-all.mjs exe"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2",
+    "httpxy": "^0.1.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "nuxt": "^3.13.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0"
+  }
+}

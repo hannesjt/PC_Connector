@@ -17,27 +17,15 @@ pc_agent/script_history.json
 # Keep config.yaml.example but ignore the real one
 pc_agent/config.yaml
 
-# ── Flutter / Dart ───────────────────────────
-mobile_app/.dart_tool/
-mobile_app/.flutter-plugins
-mobile_app/.flutter-plugins-dependencies
-mobile_app/.packages
-mobile_app/.metadata
-mobile_app/build/
-mobile_app/android/.gradle/
-mobile_app/android/app/debug/
-mobile_app/android/app/profile/
-mobile_app/android/app/release/
-mobile_app/android/local.properties
-mobile_app/android/key.properties
-mobile_app/*.jks
-
-# Unused Flutter platforms (Android-only project)
-mobile_app/ios/
-mobile_app/macos/
-mobile_app/linux/
-mobile_app/web/
-mobile_app/windows/
+# ── App (Vue / Nuxt / Capacitor / Electron) ──
+web_app/node_modules/
+web_app/.nuxt/
+web_app/.output/
+web_app/dist/
+web_app/release/
+# Generated native projects
+web_app/android/
+web_app/ios/
 
 # ── IDE & OS ─────────────────────────────────
 .idea/

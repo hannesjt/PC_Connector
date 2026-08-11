@@ -1,27 +1,36 @@
-# PC Connector – Web-App (Angular)
+# PC Connector – App (Vue / Nuxt)
 
-Web-Version der PC-Connector-Handy-App. Steuere deinen PC bequem aus dem Browser –
-gehostet auf deinem Proxmox-Server (oder jedem Docker-Host im selben Netzwerk).
+Eine einzige Vue-/Nuxt-Codebasis für **Web**, **Mobil** (Capacitor → Android/iOS)
+und **Desktop** (Electron → Windows/macOS/Linux). Sie ersetzt die frühere
+Angular-Web-App **und** die Flutter-Handy-App.
 
 ## Architektur
 
-Ein Browser kann zwei Dinge nicht, die die Handy-App macht: **Wake-on-LAN**
+Ein Browser kann zwei Dinge nicht, die die App braucht: **Wake-on-LAN**
 (rohe UDP-Pakete) und **direkte Aufrufe an den PC-Agent** (der schickt keine
-CORS-Header). Beides löst ein schlankes Node-Backend, das immer mitläuft:
+CORS-Header). Beides übernimmt der in Nuxt integrierte **Nitro-Server** (die
+`server/`-Routen):
 
 ```
-Browser ──► Angular SPA (statisch)
-        └─► Node-Backend (BFF)
-              ├─ /proxy/**   → leitet an den PC-Agent weiter (umgeht CORS,
-              │                schleust Bearer-Token für <img>/Download ein)
-              ├─ /api/wol     → sendet das Wake-on-LAN Magic Packet
-              └─ /api/discover→ findet PC-Agents im LAN (UDP-Broadcast :8421)
+Client (Vue/Nuxt SPA)
+   ├─ /proxy/**    → leitet an den PC-Agent weiter (umgeht CORS,
+   │                 schleust Bearer-Token für <img>/Download ein)
+   ├─ /api/wol      → sendet das Wake-on-LAN Magic Packet
+   └─ /api/discover → findet PC-Agents im LAN (UDP-Broadcast :8421)
 ```
 
-| Komponente  | Technik                                     |
-| ----------- | ------------------------------------------- |
-| `frontend/` | Angular 18 (Standalone-Components, Signals) |
-| `backend/`  | Node.js + Express + `http-proxy`            |
+| Ziel        | Technik                                   |
+| ----------- | ----------------------------------------- |
+| Web         | Nuxt 3 (SPA) + Nitro-Server (Node)        |
+| Android/iOS | Capacitor (verpackt die generierte SPA)   |
+| Desktop     | Electron (startet den Nitro-Server lokal) |
+
+| Ordner         | Inhalt                                          |
+| -------------- | ----------------------------------------------- |
+| `pages/`       | Seiten (Geräteliste, Setup, Steuerung, …)       |
+| `composables/` | `useApi`, `useProfiles`, `useTheme`, `useToast` |
+| `server/`      | Nitro-Routen: Proxy, WOL, Discovery             |
+| `electron/`    | Electron-Hauptprozess + Preload                 |
 
 Der PC-Agent (`pc_agent/`) bleibt **unverändert**.
 
@@ -32,32 +41,35 @@ Skripte & Kategorien · Abläufe (Chains) · Maus-Touchpad & Tastatur · Lautst�
 Zwischenablage senden/holen · Datei-Explorer (Download/Upload/Öffnen) ·
 Live-Bildschirm · Skript-Verlauf · Dark/Light-Mode.
 
-> Alles ist freigeschaltet (self-hosted, keine Paywall). Die App-PIN-Sperre wurde
-> weggelassen – sichere den Zugriff stattdessen über dein Netzwerk bzw. einen
-> Reverse-Proxy mit Auth.
+> Alles ist freigeschaltet (self-hosted, keine Paywall).
 
 ---
 
-## Deployment auf Proxmox (Docker)
+## Lokale Entwicklung
 
-Voraussetzung: Docker + Docker Compose in einer LXC/VM oder direkt auf dem Host.
+```bash
+cd web_app
+npm install
+npm run dev          # Nuxt-Dev-Server auf http://localhost:3000
+```
+
+Der Dev-Server stellt sowohl das Frontend als auch die `/proxy`-, `/api/wol`-
+und `/api/discover`-Routen bereit.
+
+---
+
+## Web-Deployment auf Proxmox (Docker)
 
 > **Wichtig:** Der Container läuft mit `network_mode: host`, damit die
-> Wake-on-LAN- und Discovery-Broadcasts das LAN erreichen. Er muss dafür im
-> **selben Layer-2-Netz** wie dein PC hängen (bei LXC eine Bridge, kein NAT).
+> Wake-on-LAN- und Discovery-Broadcasts das LAN erreichen (gleiches Layer-2-Netz
+> wie der PC).
 
 ```bash
 cd web_app
 docker compose up -d --build
 ```
 
-Danach im Browser öffnen:
-
-```
-http://<proxmox-ip>:8080
-```
-
-Anderen Port setzen:
+Danach im Browser: `http://<proxmox-ip>:8080`. Anderen Port setzen:
 
 ```yaml
 # docker-compose.yml
@@ -65,44 +77,55 @@ environment:
   - PORT=9000
 ```
 
-### Erste Schritte in der Web-App
+### Produktions-Build ohne Docker
 
-1. **„PC hinzufügen“** oder **„PCs im Netzwerk suchen“**.
-2. Auf dem PC die Agent-Weboberfläche öffnen (`http://<pc-ip>:8420`) und
-   **„Code generieren“**.
-3. Code in der Web-App eingeben → **Verbinden**. Das Profil (inkl. Token & MAC)
-   wird im Browser (localStorage) gespeichert.
+```bash
+cd web_app
+npm install
+npm run build                 # erzeugt .output (Nitro node-server)
+node .output/server/index.mjs # serviert alles auf $PORT (Standard 3000)
+```
 
 ---
 
-## Lokale Entwicklung
-
-Zwei Terminals:
+## Desktop (Electron)
 
 ```bash
-# 1) Backend (Proxy + WOL + Discovery) auf :8080
-cd web_app/backend
+cd web_app
 npm install
-npm start
+npm run build          # Nitro-Server-Bundle erzeugen
+npm run electron:dev   # App im Entwicklungsmodus starten
 
-# 2) Angular Dev-Server auf :4200 (proxyt /proxy und /api an :8080)
-cd web_app/frontend
-npm install
-npm start
+npm run electron:build # installierbares Paket (release/) via electron-builder
 ```
 
-Aufrufen: `http://localhost:4200`
+Electron startet im Produktionsmodus den gebündelten Nitro-Server lokal, sodass
+Proxy, Wake-on-LAN und Discovery direkt vom PC aus funktionieren.
 
-## Produktions-Build (ohne Docker)
+---
+
+## Mobil (Capacitor – Android / iOS)
+
+Eine mobile WebView kann keine Broadcast-Pakete senden und der PC-Agent hat
+keine CORS-Header. Für WOL/Discovery/Proxy zeigt die App daher auf eine
+laufende Web-App-Instanz (`NUXT_PUBLIC_BACKEND_BASE`):
 
 ```bash
-cd web_app/frontend
-npm install && npm run build     # erzeugt dist/pc-connector-web/browser
-cd ../backend
-npm install --omit=dev
-cp -r ../frontend/dist/pc-connector-web/browser ./public
-node server.js                   # serviert alles auf $PORT (Standard 8080)
+cd web_app
+npm install
+npm i -D @capacitor/cli
+
+# Plattformen einmalig anlegen
+npx cap add android
+npx cap add ios
+
+# generieren + synchronisieren (Backend-Adresse einbetten)
+NUXT_PUBLIC_BACKEND_BASE=http://192.168.1.10:8080 npm run cap:android
+NUXT_PUBLIC_BACKEND_BASE=http://192.168.1.10:8080 npm run cap:ios
 ```
+
+`cap:android` / `cap:ios` führen `nuxt generate`, `cap sync` und `cap open` aus.
+Der eigentliche APK-/IPA-Build erfolgt anschließend in Android Studio bzw. Xcode.
 
 ---
 
@@ -112,6 +135,6 @@ node server.js                   # serviert alles auf $PORT (Standard 8080)
   vertrauenswürdigen Heimnetz ist das ok; exponiere den Dienst **nicht**
   ungeschützt ins Internet (SSRF-Risiko). Nutze bei Bedarf einen Reverse-Proxy
   mit Authentifizierung.
-- Wake-on-LAN funktioniert nur, wenn der Docker-Host per Broadcast den PC
-  erreicht (gleiches Subnetz, WOL im BIOS/NIC aktiviert – siehe Haupt-README).
+- Wake-on-LAN funktioniert nur, wenn der Host per Broadcast den PC erreicht
+  (gleiches Subnetz, WOL im BIOS/NIC aktiviert – siehe Haupt-README).
 - Der Live-Bildschirm ist reines Polling von JPEG-Screenshots des Agents.

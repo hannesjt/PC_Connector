@@ -35,50 +35,85 @@ jobs:
           name: PC_Connector_Agent_exe
           path: pc_agent/dist/PC_Connector_Agent.exe
 
-  # ── Build Android APK ─────────────────────────────────
+  # ── Build Android APK (Capacitor) ─────────────────────
   build-apk:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile_app
+        working-directory: web_app
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.29.x"
-          channel: stable
+      - uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: flutter pub get
+        run: npm install
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/release.jks
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Generate web build and sync Capacitor
+        env:
+          NUXT_PUBLIC_BACKEND_BASE: ${{ secrets.MOBILE_BACKEND_BASE }}
+        run: npm run cap:sync
 
       - name: Build release APK
-        env:
-          KEY_STORE_PATH: ${{ github.workspace }}/mobile_app/android/release.jks
-          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --split-per-abi
+        run: ./gradlew assembleRelease
+        working-directory: web_app/android
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release*.apk out/PC_Connector.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PC_Connector_APKs
-          path: mobile_app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          name: PC_Connector_APK
+          path: web_app/out/PC_Connector.apk
+
+  # ── Build Desktop (Electron, Windows) ─────────────────
+  build-desktop:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: web_app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Nitro server bundle
+        run: npm run build
+
+      - name: Package with electron-builder
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PC_Connector_Desktop
+          path: web_app/release/*.exe
 
   # ── Create GitHub Release ─────────────────────────────
   release:
-    needs: [build-agent-exe, build-apk]
+    needs: [build-agent-exe, build-apk, build-desktop]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -95,7 +130,13 @@ jobs:
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
-          name: PC_Connector_APKs
+          name: PC_Connector_APK
+          path: dist/
+
+      - name: Download Desktop
+        uses: actions/download-artifact@v4
+        with:
+          name: PC_Connector_Desktop
           path: dist/
 
       - name: Create GitHub Release
@@ -110,13 +151,16 @@ jobs:
             | Datei | Beschreibung |
             |-------|-------------|
             | `PC_Connector_Agent.exe` | PC-Server für Windows (kein Python nötig) |
-            | `app-arm64-v8a-release.apk` | Android App (moderne Geräte, z.B. Pixel) |
+            | `PC_Connector.apk` | Android App (Vue/Capacitor) |
+            | `*.exe` (Setup) | Desktop-App für Windows (Electron) |
 
             ### Installation
             **PC-Server:** EXE starten, Weboberfläche unter `http://localhost:8420`  
-            **Android:** APK auf dem Handy installieren (Einstellung „Aus unbekannten Quellen" aktivieren)
+            **Android:** APK auf dem Handy installieren (Einstellung „Aus unbekannten Quellen" aktivieren)  
+            **Desktop:** Setup-EXE ausführen
           files: |
             dist/PC_Connector_Agent.exe
-            dist/app-arm64-v8a-release.apk
+            dist/PC_Connector.apk
+            dist/*.exe
           draft: false
           prerelease: false

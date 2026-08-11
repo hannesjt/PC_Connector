@@ -2,7 +2,7 @@
 Generates the PC Connector app icon as PNG (1024x1024) and ICO (256x256).
 Requires: pip install Pillow
 Output:
-  assets/icon/icon.png   – used by flutter_launcher_icons
+  assets/icon/icon.png   – app icon (web / Capacitor / Electron)
   assets/icon/icon.ico   – used by PyInstaller (Windows EXE)
 """
 from pathlib import Path
